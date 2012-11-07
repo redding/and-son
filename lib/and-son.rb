@@ -1,7 +1,5 @@
-require "and-son/version"
+require 'and-son/version'
 
-module And
-  module Son
-    # Your code goes here...
-  end
+module AndSon
+
 end

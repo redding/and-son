@@ -1,24 +1,8 @@
-# And::Son
+# AndSon
 
-TODO: Write a gem description
-
-## Installation
-
-Add this line to your application's Gemfile:
-
-    gem 'and-son'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install and-son
+AndSon is a client gem for communicating with a Sanford service host. It provides a generic interface for calling services and handles serializing the request and deserializing the response.
 
 ## Usage
-
-TODO: Write usage instructions here
 
 ## Contributing
 
