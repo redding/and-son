@@ -4,3 +4,6 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'sanford',  :git => "git@github.reelfx.com:teaminsight/sanford.git",  :branch => "master"
+
+gem 'bson_ext'
+gem 'rake'
