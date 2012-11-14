@@ -1,3 +1,6 @@
+# AndSon's main module provides a convenience method for creating clients
+# (`new`) and supports a few configuration options.
+#
 require 'ns-options'
 
 require 'and-son/client'
