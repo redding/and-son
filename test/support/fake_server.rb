@@ -1,10 +1,10 @@
 require 'sanford-protocol/test/fake_socket'
 
-class FakeServer < Sanford::Protocol::Test::FakeSocket
+class FakeServer
 
   def initialize
     @services = {}
-    super
+    @socket = Sanford::Protocol::Test::FakeSocket.new
   end
 
   def add_service(version, name, &block)
@@ -17,8 +17,11 @@ class FakeServer < Sanford::Protocol::Test::FakeSocket
   end
 
   def send(bytes, flag)
-    super(bytes, flag)
-    self.process(self.written)
+    self.process(bytes)
+  end
+
+  def recvfrom(*args)
+    @socket.recvfrom(*args)
   end
 
   protected
@@ -33,8 +36,7 @@ class FakeServer < Sanford::Protocol::Test::FakeSocket
   end
 
   def read_request(bytes)
-    socket = Sanford::Protocol::Test::FakeSocket.new
-    socket.add_to_read_stream(bytes)
+    socket = Sanford::Protocol::Test::FakeSocket.new(bytes)
     connection = Sanford::Protocol::Connection.new(socket)
     Sanford::Protocol::Request.parse(connection.read)
   end
@@ -44,7 +46,7 @@ class FakeServer < Sanford::Protocol::Test::FakeSocket
     connection = Sanford::Protocol::Connection.new(socket)
     response = Sanford::Protocol::Response.new(*args)
     connection.write(response.to_hash)
-    self.add_to_read_stream(socket.written)
+    @socket.reset(socket.out)
   end
 
 end

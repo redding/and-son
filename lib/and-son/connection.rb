@@ -25,7 +25,7 @@ module AndSon
       @timeout = timeout
 
       socket = TCPSocket.new(host, port)
-      socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
+      socket.setsockopt(::Socket::IPPROTO_TCP, ::Socket::TCP_NODELAY, true)
       super(socket)
     end
 
@@ -35,11 +35,11 @@ module AndSon
     # using a timeout to limit how long we wait. If nothing is ready within the
     # timeout, IO.select returns nil.
     def ready_to_read?
-      !!IO.select([ self.socket ], nil, nil, self.timeout)
+      !!IO.select([ @socket ], nil, nil, self.timeout)
     end
 
     def close
-      socket.close rescue false
+      @socket.close rescue false
     end
 
   end
