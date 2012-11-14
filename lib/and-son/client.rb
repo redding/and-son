@@ -1,4 +1,10 @@
-# AndSon's Client is the
+# AndSon's Client is the primary class for the gem. It is a simple client for
+# communicating with a Sanford server. It takes a host and port (the server to
+# connect to) and the version of the services it wants to make requests against.
+# It's `call` handles making a request and reading the server's response. All
+# requests are limited by a timeout, to keep clients from hanging forever,
+# waiting on a server. If a server doesn't respond within this time limit, an
+# exception is raised.
 #
 require 'sanford-protocol'
 

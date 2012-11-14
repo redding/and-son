@@ -1,3 +1,10 @@
+# AndSon's Connection class extends the Connection class provided by
+# Sanford-Protocol. Instead of taking a socket directly, it takes just the host
+# and port and creates it's own socket. In addition to doing this, it provides
+# a `ready_to_read?` method which can be used to see if a socket is ready to be
+# read from or not. Connections take a timeout value that will be used in
+# conjuction with `IO.select` to check if a socket is ready to be read from. If
+# a socket is not ready within the time limit, the method returns false.
 #
 # Notes:
 # * TCP_NODELAY is set to disable buffering. In the case of Sanford
