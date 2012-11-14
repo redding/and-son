@@ -14,7 +14,7 @@ class AndSon::Client
     should have_instance_methods :host, :port, :version, :timeout, :call
 
     should "default it's timeout to AndSon's timeout" do
-      assert_equal AndSon.listen_timeout, subject.timeout
+      assert_equal AndSon.config.listen_timeout, subject.timeout
     end
   end
 

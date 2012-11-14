@@ -14,7 +14,7 @@ class MakingRequestsTest < Assert::Context
     TCPSocket.stubs(:new).with(@host, @port).returns(@fake_server)
     IO.stubs(:select).returns([ @fake_server ])
 
-    @client = AndSon::Client.new(@host, @port, @version)
+    @client = AndSon.new(@host, @port, @version)
   end
   teardown do
     TCPSocket.unstub(:new)
