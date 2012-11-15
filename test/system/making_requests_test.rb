@@ -14,7 +14,7 @@ class MakingRequestsTest < Assert::Context
     TCPSocket.stubs(:new).with(@host, @port).returns(@fake_server)
     IO.stubs(:select).returns([ @fake_server ])
 
-    @client = AndSon::Client.new(@host, @port, @version)
+    @client = AndSon.new(@host, @port, @version)
   end
   teardown do
     TCPSocket.unstub(:new)
@@ -31,7 +31,7 @@ class MakingRequestsTest < Assert::Context
     should "have gotten a 200 response with the parameter echoed back" do
       assert_equal 200,     @response.status.code
       assert_equal nil,     @response.status.message
-      assert_equal 'test',  @response.result
+      assert_equal 'test',  @response.data
     end
   end
 

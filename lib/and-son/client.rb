@@ -19,7 +19,7 @@ module AndSon
       options ||= {}
       @host, @port = [ host, port ]
       @version = version
-      @timeout = options[:timeout] || AndSon.listen_timeout
+      @timeout = options[:timeout] || AndSon.config.listen_timeout
     end
 
     def call(name, params = {})
