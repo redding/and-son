@@ -4,7 +4,7 @@ ROOT = File.expand_path('../..', __FILE__)
 
 require 'and-son'
 
-require 'test/support/fake_socket'
+require 'test/support/fake_server'
 
 if defined?(Assert)
   require 'assert-mocha'
