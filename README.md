@@ -9,7 +9,7 @@ AndSon is a simple Sanford client for Ruby.  It provides an API for calling serv
 client = AndSon.new('127.0.0.1', 8000, 'v1')
 
 # call a service and get its response data:
-user_data = client.call('get_user', { :user_name => 'joetest' })
+user_data = client.call('get_user', {:user_name => 'joetest'})
 ```
 
 ## Calling Services
@@ -17,6 +17,25 @@ user_data = client.call('get_user', { :user_name => 'joetest' })
 To call a service, you first need a client to make the calls.  You define clients by specifying the host's ip address and port plus the version of the API to make calls against.
 
 Once you have your client defined, make service calls using the `call` method.  It will return any response data and raise an exception if anything goes wrong.
+
+### Timeouts
+
+By default, all requests timeout after 60s.  You can override this globally using the `ANDSON_TIMEOUT` env var. You can override this global timeout on a per-call basis by chaining in the `timeout` method.
+
+```ruby
+# timeout this request after 10 seconds
+client.timeout(10).call('get_user', {:user_name => 'joetest'})
+```
+
+When a request times out, a `Sanford::Protocol::TimeoutError` is raised:
+
+```ruby
+begin
+  client.timeout(10).call('get_user', {:user_name => 'joetest'})
+rescue Sanford::Protocol::TimeoutError => err
+  puts "timeout - so sad :("
+end
+```
 
 ### Exception Handling
 
@@ -37,8 +56,8 @@ Each exception knows about the response that raised it:
 begin
   client.call('some_unknown_service')
 rescue AndSon::NotFoundError => err
-  err.response              #=> AndSon::Response ...
-  err.response.status.code  #=> 404
+  err.response       #=> AndSon::Response ...
+  err.response.code  #=> 404
 end
 ```
 
@@ -48,7 +67,7 @@ If you call a service and pass it a block, no exceptions will be raised and the 
 
 ```ruby
 user = client.call('get_user', { :user_name => 'joetest' }) do |response|
-  if response.status.code == 200
+  if response.code == 200
     User.new(response.data)
   else
     NullUser.new
