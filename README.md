@@ -1,32 +1,35 @@
 # AndSon
 
-AndSon is a client gem for communicating with a Sanford server. It provides a generic interface for calling services and handles serializing the request and deserializing the response.
+AndSon is a simple Sanford client for Ruby.  It provides an API for calling services and handling responses.  It uses [Sanford::Protocol](https://github.com/redding/sanford-protocol) to communicate with Sanford servers.
 
 ## Usage
 
-AndSon is a very light client. To use it, create a client, pointing it at a Sanford server:
+Create a client instance, pointing it at a Sanford server:
 
 ```ruby
 client = AndSon.new('127.0.0.1', 8000, 'v1')
 ```
 
-When creating a client, a version needs to be passed in addition to the Sanford server's host and port. This will have the client make requests against that version of the Sanford service host.
+To create a client, specify the host's ip address and port plus the version of the API to make calls against.
 
-Once a client is created, a service can be called, using the `call` method:
+Call specific services using the `call` method:
 
 ```ruby
 response = client.call('get_user', { :user_name => 'joe.test' })
 ```
 
-This will make a request against `'v1'` of the Sanford service host, for the service `'get_user'`. We are also passing the user name `'joe.test'` in the parameters. This will call the service on the Sanford server and return the result, a `Sanford::Protocol::Response` object. A response contains a status and the result of the service (if it succeeded successfully):
+This will make a request against `'v1'` of the service host and call the service `'get_user'` with any given data.
+
+This will return a `Sanford::Protocol::Response` object:
 
 ```ruby
-response.status.code    # => 200 (successful)
-response.status.message # => optional message, usually set on non-200 results
-response.result         # => the result of calling the service
+response.status.code    #=> 200
+response.status.name    #=> OK
+response.status.message #=> "Success."
+response.data           #=> {:some => 'data'}
 ```
 
-For more details about the response object, see the `sanford-protocol` gem.
+For more details about the response object, see [sanford-protocol](https://github.com/redding/sanford-protocol).
 
 ## Contributing
 

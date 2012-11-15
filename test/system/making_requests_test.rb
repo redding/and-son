@@ -31,7 +31,7 @@ class MakingRequestsTest < Assert::Context
     should "have gotten a 200 response with the parameter echoed back" do
       assert_equal 200,     @response.status.code
       assert_equal nil,     @response.status.message
-      assert_equal 'test',  @response.result
+      assert_equal 'test',  @response.data
     end
   end
 
