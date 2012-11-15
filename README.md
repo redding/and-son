@@ -4,32 +4,78 @@ AndSon is a simple Sanford client for Ruby.  It provides an API for calling serv
 
 ## Usage
 
-Create a client instance, pointing it at a Sanford server:
-
 ```ruby
+# create a client
 client = AndSon.new('127.0.0.1', 8000, 'v1')
+
+# call a service and get its response data:
+user_data = client.call('get_user', {:user_name => 'joetest'})
 ```
 
-To create a client, specify the host's ip address and port plus the version of the API to make calls against.
+## Calling Services
 
-Call specific services using the `call` method:
+To call a service, you first need a client to make the calls.  You define clients by specifying the host's ip address and port plus the version of the API to make calls against.
+
+Once you have your client defined, make service calls using the `call` method.  It will return any response data and raise an exception if anything goes wrong.
+
+### Timeouts
+
+By default, all requests timeout after 60s.  You can override this globally using the `ANDSON_TIMEOUT` env var. You can override this global timeout on a per-call basis by chaining in the `timeout` method.
 
 ```ruby
-response = client.call('get_user', { :user_name => 'joe.test' })
+# timeout this request after 10 seconds
+client.timeout(10).call('get_user', {:user_name => 'joetest'})
 ```
 
-This will make a request against `'v1'` of the service host and call the service `'get_user'` with any given data.
-
-This will return a `Sanford::Protocol::Response` object:
+When a request times out, a `Sanford::Protocol::TimeoutError` is raised:
 
 ```ruby
-response.status.code    #=> 200
-response.status.name    #=> OK
-response.status.message #=> "Success."
-response.data           #=> {:some => 'data'}
+begin
+  client.timeout(10).call('get_user', {:user_name => 'joetest'})
+rescue Sanford::Protocol::TimeoutError => err
+  puts "timeout - so sad :("
+end
 ```
 
-For more details about the response object, see [sanford-protocol](https://github.com/redding/sanford-protocol).
+### Exception Handling
+
+AndSon raises exceptions when a call responds with a `4xx` or `5xx` response code (see [Sanford Status Codes](https://github.com/redding/sanford-protocol#status-codes) for more on response codes):
+
+* `400`: `BadRequestError < ClientError`
+* `404`: `NotFoundError < ClientError`
+* `4xx`: `ClientError < RequestError`
+* `5xx`: `ServerError < RequestError`
+
+```ruby
+client.call('some_unknown_service')   #=> NotFoundError...
+```
+
+Each exception knows about the response that raised it:
+
+```ruby
+begin
+  client.call('some_unknown_service')
+rescue AndSon::NotFoundError => err
+  err.response       #=> AndSon::Response ...
+  err.response.code  #=> 404
+end
+```
+
+### Response Handling
+
+If you call a service and pass it a block, no exceptions will be raised and the call will yield its response to the block.  The call will return the return value of the block.
+
+```ruby
+user = client.call('get_user', { :user_name => 'joetest' }) do |response|
+  if response.code == 200
+    User.new(response.data)
+  else
+    NullUser.new
+  end
+end
+```
+
+For more details about the response object, see [sanford-protocol](https://github.com/redding/sanford-protocol#response).
 
 ## Contributing
 

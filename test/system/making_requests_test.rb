@@ -1,5 +1,4 @@
 require 'assert'
-
 require 'sanford-protocol/test/helpers'
 
 class MakingRequestsTest < Assert::Context
@@ -42,7 +41,7 @@ class MakingRequestsTest < Assert::Context
     end
 
     should "raise a timeout error" do
-      assert_raises(AndSon::TimeoutError){ @client.call('echo', 'test') }
+      assert_raises(Sanford::Protocol::TimeoutError) { @client.call('echo', 'test') }
     end
   end
 
