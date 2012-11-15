@@ -13,23 +13,23 @@ require 'and-son/connection'
 module AndSon
 
   class Client
-    attr_reader :host, :port, :version, :timeout
+    attr_reader :host, :port, :version
 
-    def initialize(host, port, version, options = nil)
+    def initialize(host, port, version)
       options ||= {}
       @host, @port = [ host, port ]
       @version = version
-      @timeout = options[:timeout] || AndSon.config.listen_timeout
     end
 
-    def call(name, params = {})
-      connection = AndSon::Connection.new(self.host, self.port, self.timeout)
+    def call(name, params = {}, timeout = nil)
+      timeout ||= (ENV['ANDSON_REQUEST_TIMEOUT'] || 60).to_i
+      connection = AndSon::Connection.new(self.host, self.port, timeout)
       request = self.request(name, params)
       connection.write(request.to_hash)
       if connection.ready_to_read?
         self.response(connection.read)
       else
-        raise(AndSon::TimeoutError.new(request, connection.timeout))
+        raise(AndSon::TimeoutError.new(request, timeout))
       end
     ensure
       connection.close if connection

@@ -11,11 +11,7 @@ class AndSon::Client
     end
     subject{ @client }
 
-    should have_instance_methods :host, :port, :version, :timeout, :call
-
-    should "default it's timeout to AndSon's timeout" do
-      assert_equal AndSon.config.listen_timeout, subject.timeout
-    end
+    should have_instance_methods :host, :port, :version, :call
   end
 
   # the `call` method is tested in the file test/system/making_requests_test.rb,
