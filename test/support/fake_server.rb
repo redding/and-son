@@ -1,52 +1,57 @@
-require 'sanford-protocol/test/fake_socket'
-
 class FakeServer
 
-  def initialize
-    @services = {}
-    @socket = Sanford::Protocol::Test::FakeSocket.new
+  def initialize(port)
+    @port = port
+    @handlers = {}
   end
 
-  def add_service(version, name, &block)
-    @services["#{version}-#{name}"] = block
+  def add_handler(version, name, &block)
+    @handlers["#{version}-#{name}"] = block
   end
 
-  # Socket methods
+  def run
+    server = TCPServer.new("localhost", @port)
+    socket = server.accept
 
-  def setsockopt(*args)
-  end
+    serve(socket)
 
-  def send(bytes, flag)
-    self.process(bytes)
-  end
-
-  def recvfrom(*args)
-    @socket.recvfrom(*args)
+    server.close rescue false
   end
 
   protected
 
-  def process(bytes)
-    request = self.read_request(bytes)
-    block = @services["#{request.version}-#{request.name}"]
-    if block
-      returned = block.call(request.params)
-      self.write_response(*returned)
-    end
-  end
-
-  def read_request(bytes)
-    socket = Sanford::Protocol::Test::FakeSocket.new(bytes)
+  def serve(socket)
     connection = Sanford::Protocol::Connection.new(socket)
-    Sanford::Protocol::Request.parse(connection.read)
-  end
-
-  def write_response(*args)
-    socket = Sanford::Protocol::Test::FakeSocket.new
-    connection = Sanford::Protocol::Connection.new(socket)
-    response = Sanford::Protocol::Response.new(*args)
+    request = Sanford::Protocol::Request.parse(connection.read)
+    status, result = route(request)
+    response = Sanford::Protocol::Response.new(status, result)
     connection.write(response.to_hash)
-    @socket.reset(socket.out)
+  end
+
+  def route(request)
+    handler = @handlers["#{request.version}-#{request.name}"]
+    returned = handler.call(request.params)
+  end
+
+  module Helper
+
+    def run_fake_server(server, &block)
+      begin
+        pid = fork do
+          trap("TERM"){ exit }
+          server.run
+        end
+
+        sleep 0.3 # Give time for the socket to start listening.
+        yield
+      ensure
+        if pid
+          Process.kill("TERM", pid)
+          Process.wait(pid)
+        end
+      end
+    end
+
   end
 
 end
