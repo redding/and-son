@@ -4,7 +4,7 @@ require 'and-son/exceptions'
 
 module AndSon
 
-  class Response
+  class Response < Struct.new(:protocol_response)
 
     CODE_MATCHERS = {
       '400' => 400,
@@ -17,21 +17,15 @@ module AndSon
       self.new(Sanford::Protocol::Response.parse(hash))
     end
 
-    attr_reader :protocol_response
-
-    def initialize(protocol_response)
-      @protocol_response = protocol_response
-    end
-
     def data
       if self.code_is_5xx?
-        raise ServerError, self.protocol_response.status.message
+        raise ServerError.new(self.protocol_response)
       elsif self.code_is_404?
-        raise NotFoundError, self.protocol_response.status.message
+        raise NotFoundError.new(self.protocol_response)
       elsif self.code_is_400?
-        raise BadRequestError, self.protocol_response.status.message
+        raise BadRequestError.new(self.protocol_response)
       elsif self.code_is_4xx?
-        raise ClientError, self.protocol_response.status.message
+        raise ClientError.new(self.protocol_response)
       else
         self.protocol_response.data
       end
@@ -41,7 +35,7 @@ module AndSon
       matcher = matcher.kind_of?(Regexp) ? matcher : Regexp.new(matcher.to_s)
 
       define_method("code_is_#{name}?") do
-        self.protocol_response.code.to_s =~ matcher
+        !!(self.protocol_response.code.to_s =~ matcher)
       end
     end
 

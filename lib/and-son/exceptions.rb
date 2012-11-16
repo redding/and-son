@@ -1,12 +1,19 @@
 module AndSon
 
-  class RequestError < RuntimeError; end
+  class RequestError < RuntimeError
+    attr_reader :response
 
-  class ClientError < RequestError; end
+    def initialize(protocol_response)
+      super(protocol_response.status.message)
+      @response = protocol_response
+    end
+  end
 
-  class BadRequestError < ClientError; end
-  class NotFoundError < ClientError; end
+  ClientError     = Class.new(RequestError)
 
-  class ServerError < RequestError; end
+  BadRequestError = Class.new(ClientError)
+  NotFoundError   = Class.new(ClientError)
+
+  ServerError     = Class.new(RequestError)
 
 end
