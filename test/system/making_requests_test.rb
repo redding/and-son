@@ -11,14 +11,14 @@ class MakingRequestsTest < Assert::Context
   class SuccessTest < MakingRequestsTest
     desc "returns a successful response"
     setup do
-      @fake_server.add_handler('v1', 'echo'){|params| [ 200, params ] }
+      @fake_server.add_handler('v1', 'echo'){|params| [ 200, params['message'] ] }
     end
 
-    should "have gotten a 200 response with the parameter echoed back" do
+    should "get a 200 response with the parameter echoed back" do
       self.run_fake_server(@fake_server) do
 
         client = AndSon.new('localhost', 12000, 'v1')
-        client.call('echo', 'test') do |response|
+        client.call('echo', :message => 'test') do |response|
           assert_equal 200,     response.status.code
           assert_equal nil,     response.status.message
           assert_equal 'test',  response.data
@@ -27,6 +27,44 @@ class MakingRequestsTest < Assert::Context
       end
     end
 
+  end
+
+  class AuthorizeTest < MakingRequestsTest
+    setup do
+      @fake_server.add_handler('v1', 'authorize_it') do |params|
+        if params['api_key'] == 12345
+          [ 200, params['data'] ]
+        else
+          [ 401, params['data'] ]
+        end
+      end
+    end
+
+    should "get a 200 response when api_key is passed with the correct value" do
+      self.run_fake_server(@fake_server) do
+
+        client = AndSon.new('localhost', 12000, 'v1').params({ 'api_key' => 12345 })
+        client.call('authorize_it', { 'data' => 'holla' }) do |response|
+          assert_equal 200,     response.status.code
+          assert_equal nil,     response.status.message
+          assert_equal 'holla', response.data
+        end
+
+      end
+    end
+
+    should "get a 401 response when api_key isn't passed" do
+      self.run_fake_server(@fake_server) do
+
+        client = AndSon.new('localhost', 12000, 'v1')
+        client.call('authorize_it', { 'data' => 'holla' }) do |response|
+          assert_equal 401,     response.status.code
+          assert_equal nil,     response.status.message
+          assert_equal 'holla', response.data
+        end
+
+      end
+    end
   end
 
   class Failure400Test < MakingRequestsTest

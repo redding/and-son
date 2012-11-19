@@ -16,6 +16,13 @@ module AndSon
       self.call_runner.tap{|r| r.timeout_value = seconds.to_f}
     end
 
+    def params(hash = nil)
+      if !hash.kind_of?(Hash)
+        raise ArgumentError, "expected params to be a Hash instead of a #{hash.class}"
+      end
+      self.call_runner.tap{|r| r.params_value.merge!(hash) }
+    end
+
   end
 
   class Client < Struct.new(:host, :port, :version)
@@ -32,20 +39,25 @@ module AndSon
         :host    => host,
         :port    => port,
         :version => version,
-        :timeout_value => (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f
+        :timeout_value => (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f,
+        :params_value  => {}
       })
     end
   end
 
-  class CallRunner < OpenStruct # {:host, :port, :version, :timeout_value}
+  class CallRunner < OpenStruct # {:host, :port, :version, :timeout_value, :params_value}
     include CallRunnerMethods
 
     # chain runner methods by returning itself
     def call_runner; self; end
 
     def call(name, params = {})
+      if !params.kind_of?(Hash)
+        raise ArgumentError, "expected params to be a Hash instead of a #{hash.class}"
+      end
+      call_params = self.params_value.merge(params)
       AndSon::Connection.new(host, port).open do |connection|
-        connection.write(Sanford::Protocol::Request.new(version, name, params).to_hash)
+        connection.write(Sanford::Protocol::Request.new(version, name, call_params).to_hash)
         client_response = AndSon::Response.parse(connection.read(timeout_value))
 
         if block_given?
@@ -55,6 +67,7 @@ module AndSon
         end
       end
     end
+
   end
 
 end
