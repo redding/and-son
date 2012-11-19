@@ -1,6 +1,7 @@
 require 'ostruct'
 require 'sanford-protocol'
 require 'and-son/connection'
+require 'and-son/response'
 
 module AndSon
 
@@ -45,7 +46,13 @@ module AndSon
     def call(name, params = {})
       AndSon::Connection.new(host, port).open do |connection|
         connection.write(Sanford::Protocol::Request.new(version, name, params).to_hash)
-        Sanford::Protocol::Response.parse(connection.read(timeout_value))
+        client_response = AndSon::Response.parse(connection.read(timeout_value))
+
+        if block_given?
+          yield client_response.protocol_response
+        else
+          client_response.data
+        end
       end
     end
   end
