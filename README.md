@@ -37,6 +37,24 @@ rescue Sanford::Protocol::TimeoutError => err
 end
 ```
 
+### Default Params
+
+Similarly to timeouts, all requests default their params to an empty `Hash` (`{}`). This can be overriden using the `params` method.
+
+```ruby
+# add an API key to all requests made by this client, to authorize our client
+client.params({ 'api_key' => 12345 }).call('get_user', {:user_name => 'joetest'})
+```
+
+One thing to be aware of, AndSon has limited ability to 'merge' or 'append' params. For example:
+
+```ruby
+# raises an exception, can't merge a string on to a hash
+client.params({ 'api_key' => 12345 }).call('get_user', 'joetest')
+```
+
+Be aware of this when setting default params and passing additional params with the `call` method. In general, it's recommended to use ruby's `Hash` for the best results.
+
 ### Exception Handling
 
 AndSon raises exceptions when a call responds with a `4xx` or `5xx` response code (see [Sanford Status Codes](https://github.com/redding/sanford-protocol#status-codes) for more on response codes):

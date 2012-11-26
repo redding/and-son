@@ -38,6 +38,28 @@ class AndSon::Client
       assert_respond_to :call, runner
       assert_equal 10.0, runner.timeout_value
     end
+
+    should "return a CallRunner with params_value set using #params" do
+      runner = subject.params({ :api_key => 12345 })
+
+      assert_kind_of AndSon::CallRunner, runner
+      assert_respond_to :call, runner
+      assert_equal({ :api_key => 12345 }, runner.params_value)
+    end
+
+    should "raise an ArgumentError when #params is not passed a Hash" do
+      assert_raises(ArgumentError) do
+        subject.params('test')
+      end
+    end
+
+    should "raise an ArgumentError when #call is not passed a Hash for params" do
+      runner = subject.timeout(0.1) # in case it actually tries to make the request
+
+      assert_raises(ArgumentError) do
+        runner.call('something', 'test')
+      end
+    end
   end
 
   # the `call` method is tested in the file test/system/making_requests_test.rb,
