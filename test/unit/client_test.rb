@@ -39,12 +39,13 @@ class AndSon::Client
       assert_equal 10.0, runner.timeout_value
     end
 
-    should "return a CallRunner with params_value set using #params" do
+    should "return a CallRunner with params_value set using #params and stringify " \
+           "the params hash" do
       runner = subject.params({ :api_key => 12345 })
 
       assert_kind_of AndSon::CallRunner, runner
       assert_respond_to :call, runner
-      assert_equal({ :api_key => 12345 }, runner.params_value)
+      assert_equal({ "api_key" => 12345 }, runner.params_value)
     end
 
     should "raise an ArgumentError when #params is not passed a Hash" do

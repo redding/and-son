@@ -20,7 +20,13 @@ module AndSon
       if !hash.kind_of?(Hash)
         raise ArgumentError, "expected params to be a Hash instead of a #{hash.class}"
       end
-      self.call_runner.tap{|r| r.params_value.merge!(hash) }
+      self.call_runner.tap{|r| r.params_value.merge!(self.stringify_keys(hash)) }
+    end
+
+    protected
+
+    def stringify_keys(hash)
+      hash.inject({}){|h, (k, v)| h.merge({ k.to_s => v }) }
     end
 
   end
