@@ -12,7 +12,7 @@ module AndSon
       protocol_connection = Sanford::Protocol::Connection.new(tcp_socket)
       yield protocol_connection if block_given?
     ensure
-      protocol_connection.close
+      protocol_connection.close if protocol_connection
     end
 
     private
