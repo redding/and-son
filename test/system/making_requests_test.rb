@@ -29,6 +29,28 @@ class MakingRequestsTest < Assert::Context
 
   end
 
+  class WithStoredResponsesTest < MakingRequestsTest
+    desc "is stored with and-son and with testing ENV var set"
+    setup do
+      ENV['ANDSON_TEST_MODE'] = 'yes'
+    end
+    teardown do
+      ENV.delete('ANDSON_TEST_MODE')
+    end
+
+    should "return the registered response" do
+      client = AndSon.new('localhost', 12000, 'v1')
+      client.responses.add('echo', 'message' => 'test'){ 'test' }
+
+      client.call('echo', 'message' => 'test') do |response|
+        assert_equal 200,     response.code
+        assert_equal nil,     response.status.message
+        assert_equal 'test',  response.data
+      end
+    end
+
+  end
+
   class AuthorizeTest < MakingRequestsTest
     setup do
       @fake_server.add_handler('v1', 'authorize_it') do |params|
