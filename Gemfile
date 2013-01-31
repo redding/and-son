@@ -5,5 +5,7 @@ gemspec
 
 gem 'bundler', '~>1.1'
 gem 'rake',    '~>0.9.2'
-
 gem 'bson_ext'
+
+gem 'sanford-protocol',
+  :git => 'git://github.com/redding/sanford-protocol.git', :branch => "v0.5.2"
