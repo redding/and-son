@@ -1,3 +1,5 @@
+require 'benchmark'
+require 'logger'
 require 'ostruct'
 require 'sanford-protocol'
 require 'and-son/connection'
@@ -14,7 +16,7 @@ module AndSon
     # called on a client, but returns the chained instance if called on a runner
 
     def timeout(seconds)
-      self.call_runner.tap{|r| r.timeout_value = seconds.to_f}
+      self.call_runner.tap{|r| r.timeout_value = seconds.to_f }
     end
 
     def params(hash = nil)
@@ -22,6 +24,10 @@ module AndSon
         raise ArgumentError, "expected params to be a Hash instead of a #{hash.class}"
       end
       self.call_runner.tap{|r| r.params_value.merge!(self.stringify_keys(hash)) }
+    end
+
+    def logger(passed_logger)
+      self.call_runner.tap{|r| r.logger_value = passed_logger }
     end
 
     protected
@@ -55,13 +61,15 @@ module AndSon
         :version  => version,
         :timeout_value => (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f,
         :params_value  => {},
+        :logger_value  => NullLogger.new,
         :responses     => @responses,
       })
     end
   end
 
   class CallRunner < OpenStruct
-    # {:host, :port, :version, :timeout_value, :params_value, :responses}
+    # { :host, :port, :version, :timeout_value, :params_value, :logger_value,
+    #   :responses }
     include CallRunnerMethods
 
     # chain runner methods by returning itself
@@ -72,9 +80,13 @@ module AndSon
       if !params.kind_of?(Hash)
         raise ArgumentError, "expected params to be a Hash instead of a #{params.class}"
       end
-      client_response = self.responses.find(name, params) if ENV['ANDSON_TEST_MODE']
-      client_response ||= self.call!(name, params)
+      client_response = nil
+      benchmark = Benchmark.measure do
+        client_response = self.responses.find(name, params) if ENV['ANDSON_TEST_MODE']
+        client_response ||= self.call!(name, params)
+      end
 
+      self.logger_value.info("[AndSon] #{summary_line(name, params, benchmark, client_response)}")
       if block_given?
         yield client_response.protocol_response
       else
@@ -90,6 +102,50 @@ module AndSon
       end
     end
 
+    protected
+
+    def summary_line(name, params, benchmark, client_response)
+      response = client_response.protocol_response
+      SummaryLine.new.tap do |line|
+        line.add 'host',    "#{self.host}:#{self.port}"
+        line.add 'version',  self.version
+        line.add 'service',  name
+        line.add 'params',   params
+        line.add 'status',   response.code
+        line.add 'duration', self.round_time(benchmark.real)
+      end
+    end
+
+    ROUND_PRECISION = 2
+    ROUND_MODIFIER = 10 ** ROUND_PRECISION
+    def round_time(time_in_seconds)
+      (time_in_seconds * 1000 * ROUND_MODIFIER).to_i / ROUND_MODIFIER.to_f
+    end
+
+  end
+
+  class SummaryLine
+
+    def initialize
+      @hash = {}
+    end
+
+    def add(key, value)
+      @hash[key] = value.inspect if value
+    end
+
+    def to_s
+      [ 'host', 'version', 'service', 'status', 'duration', 'params' ].map do |key|
+        "#{key}=#{@hash[key]}" if @hash[key]
+      end.compact.join(" ")
+    end
+
+  end
+
+  class NullLogger
+    ::Logger::Severity.constants.each do |name|
+      define_method(name.downcase){|*args| } # no-op
+    end
   end
 
 end

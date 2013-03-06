@@ -11,8 +11,8 @@ class AndSon::Client
     end
     subject{ @client }
 
-    should have_readers :host, :port, :version, :responses
-    should have_imeths :call_runner, :call, :timeout
+    should have_imeths :host, :port, :version, :responses
+    should have_imeths :call_runner, :call, :timeout, :logger, :params
 
     should "know its default call runner" do
       default_runner = subject.call_runner
@@ -21,6 +21,7 @@ class AndSon::Client
       assert_equal @port, default_runner.port
       assert_equal @version, default_runner.version
       assert_equal 60.0, default_runner.timeout_value
+      assert_instance_of AndSon::NullLogger, default_runner.logger_value
     end
 
     should "override the default call runner timeout with an env var" do
@@ -47,6 +48,14 @@ class AndSon::Client
       assert_kind_of AndSon::CallRunner, runner
       assert_respond_to :call, runner
       assert_equal({ "api_key" => 12345 }, runner.params_value)
+    end
+
+    should "return a CallRunner with a logger value set #logger" do
+      runner = subject.logger(logger = Logger.new(STDOUT))
+
+      assert_kind_of AndSon::CallRunner, runner
+      assert_respond_to :call, runner
+      assert_equal logger, runner.logger_value
     end
 
     should "raise an ArgumentError when #params is not passed a Hash" do
