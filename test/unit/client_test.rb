@@ -1,4 +1,5 @@
 require 'assert'
+require 'and-son/stored_responses'
 
 class AndSon::Client
 
@@ -10,7 +11,7 @@ class AndSon::Client
     end
     subject{ @client }
 
-    should have_imeths :host, :port, :version
+    should have_readers :host, :port, :version, :responses
     should have_imeths :call_runner, :call, :timeout
 
     should "know its default call runner" do
@@ -61,6 +62,11 @@ class AndSon::Client
         runner.call('something', 'test')
       end
     end
+
+    should "track its stored responses" do
+      assert_kind_of AndSon::StoredResponses, subject.responses
+    end
+
   end
 
   # the `call` method is tested in the file test/system/making_requests_test.rb,
