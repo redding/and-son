@@ -1,8 +1,11 @@
 class FakeServer
 
-  def initialize(port)
+  def initialize(port, options = nil)
+    options ||= {}
     @port = port
     @handlers = {}
+
+    @closing_server = !!options[:closing_server]
   end
 
   def add_handler(version, name, &block)
@@ -13,7 +16,13 @@ class FakeServer
     server = TCPServer.new("localhost", @port)
     socket = server.accept
 
-    serve(socket)
+    if @closing_server
+      sleep 0.1 # ensure the connection isn't closed before a client can run
+                # IO.select
+      socket.close
+    else
+      serve(socket)
+    end
 
     server.close rescue false
   end
@@ -37,19 +46,20 @@ class FakeServer
 
     def run_fake_server(server, &block)
       begin
-        pid = fork do
-          trap("TERM"){ exit }
-          server.run
-        end
-
-        sleep 0.3 # Give time for the socket to start listening.
+        thread = Thread.new{ server.run }
         yield
       ensure
-        if pid
-          Process.kill("TERM", pid)
-          Process.wait(pid)
+        begin
+          TCPSocket.open("localhost", server.instance_variable_get("@port"))
+        rescue Exception
         end
+        thread.join
       end
+    end
+
+    def start_closing_server(port, &block)
+      server = FakeServer.new(port, :closing_server => true)
+      run_fake_server(server, &block)
     end
 
   end

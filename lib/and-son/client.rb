@@ -98,7 +98,11 @@ module AndSon
       call_params = self.params_value.merge(params)
       AndSon::Connection.new(host, port).open do |connection|
         connection.write(Sanford::Protocol::Request.new(version, name, call_params).to_hash)
-        AndSon::Response.parse(connection.read(timeout_value))
+        if !connection.peek(timeout_value).empty?
+          AndSon::Response.parse(connection.read(timeout_value))
+        else
+          raise AndSon::ConnectionClosedError.new
+        end
       end
     end
 
@@ -140,6 +144,12 @@ module AndSon
       end.compact.join(" ")
     end
 
+  end
+
+  class ConnectionClosedError < RuntimeError
+    def initialize
+      super "The server closed the connection, no response was written."
+    end
   end
 
   class NullLogger
