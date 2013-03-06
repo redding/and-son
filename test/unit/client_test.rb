@@ -4,6 +4,8 @@ require 'and-son/stored_responses'
 class AndSon::Client
 
   class BaseTest < Assert::Context
+    include FakeServer::Helper
+
     desc "AndSon::Client"
     setup do
       @host, @port, @version = '0.0.0.0', 8000, "v1"
@@ -74,6 +76,16 @@ class AndSon::Client
 
     should "track its stored responses" do
       assert_kind_of AndSon::StoredResponses, subject.responses
+    end
+
+    should "raise a ConnectionClosedError when the server closes the connection" do
+      self.start_closing_server(12001) do
+        client = AndSon::Client.new('localhost', 12001, 'v1')
+
+        assert_raises(AndSon::ConnectionClosedError) do
+          client.call('anything')
+        end
+      end
     end
 
   end
