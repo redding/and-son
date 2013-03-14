@@ -1,8 +1,9 @@
 require 'assert'
+require 'and-son/response'
 
 class AndSon::Response
 
-  class BaseTest < Assert::Context
+  class BaseTests < Assert::Context
     desc "AndSon::Response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new([ 200, 'message' ], 'data')
@@ -10,8 +11,8 @@ class AndSon::Response
     end
     subject{ @response }
 
-    should have_instance_methods :data, :code_is_5xx?, :code_is_404?, :code_is_400?, :code_is_4xx?
-    should have_class_methods :parse
+    should have_imeths :data, :code_is_5xx?, :code_is_404?, :code_is_400?, :code_is_4xx?
+    should have_cmeths :parse
 
     should "return the protocol response's data with #data" do
       assert_equal @protocol_response.data, subject.data
@@ -22,9 +23,10 @@ class AndSon::Response
       assert_equal false, subject.code_is_400?
       assert_equal false, subject.code_is_4xx?
     end
+
   end
 
-  class FailedResponseTest < BaseTest
+  class FailedResponseTests < BaseTests
     desc "given a failed response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new([ 500, 'message' ])
@@ -40,9 +42,10 @@ class AndSon::Response
       assert_equal @protocol_response.status.message, exception.message
       assert_equal @protocol_response,                exception.response
     end
+
   end
 
-  class Response5xxTest < BaseTest
+  class Response5xxTests < BaseTests
     desc "given a 5xx response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(500)
@@ -55,9 +58,10 @@ class AndSon::Response
       assert_equal false, subject.code_is_400?
       assert_equal false, subject.code_is_4xx?
     end
+
   end
 
-  class Response404Test < BaseTest
+  class Response404Tests < BaseTests
     desc "given a 404 response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(404)
@@ -71,9 +75,10 @@ class AndSon::Response
       assert_equal false, subject.code_is_400?
       assert_equal true,  subject.code_is_4xx?
     end
+
   end
 
-  class Response400Test < BaseTest
+  class Response400Tests < BaseTests
     desc "given a 400 response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(400)
@@ -87,9 +92,10 @@ class AndSon::Response
       assert_equal true,  subject.code_is_400?
       assert_equal true,  subject.code_is_4xx?
     end
+
   end
 
-  class Response4xxTest < BaseTest
+  class Response4xxTests < BaseTests
     desc "given a 4xx response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(402)
@@ -102,6 +108,7 @@ class AndSon::Response
       assert_equal false, subject.code_is_400?
       assert_equal true,  subject.code_is_4xx?
     end
+
   end
 
 end

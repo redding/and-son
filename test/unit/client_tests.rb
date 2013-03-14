@@ -1,9 +1,11 @@
 require 'assert'
+require 'test/support/fake_server'
 require 'and-son/stored_responses'
+require 'and-son/client'
 
 class AndSon::Client
 
-  class BaseTest < Assert::Context
+  class BaseTests < Assert::Context
     include FakeServer::Helper
 
     desc "AndSon::Client"

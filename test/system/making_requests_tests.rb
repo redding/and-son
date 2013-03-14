@@ -1,6 +1,8 @@
 require 'assert'
+require 'test/support/fake_server'
+require 'and-son'
 
-class MakingRequestsTest < Assert::Context
+class MakingRequestsTests < Assert::Context
   include FakeServer::Helper
 
   desc "making a request that"
@@ -8,7 +10,7 @@ class MakingRequestsTest < Assert::Context
     @fake_server = FakeServer.new(12000)
   end
 
-  class SuccessTest < MakingRequestsTest
+  class SuccessTests < MakingRequestsTests
     desc "returns a successful response"
     setup do
       @fake_server.add_handler('v1', 'echo'){|params| [ 200, params['message'] ] }
@@ -29,7 +31,7 @@ class MakingRequestsTest < Assert::Context
 
   end
 
-  class WithStoredResponsesTest < MakingRequestsTest
+  class WithStoredResponsesTests < MakingRequestsTests
     desc "is stored with and-son and with testing ENV var set"
     setup do
       ENV['ANDSON_TEST_MODE'] = 'yes'
@@ -51,7 +53,7 @@ class MakingRequestsTest < Assert::Context
 
   end
 
-  class AuthorizeTest < MakingRequestsTest
+  class AuthorizeTests < MakingRequestsTests
     setup do
       @fake_server.add_handler('v1', 'authorize_it') do |params|
         if params['api_key'] == 12345
@@ -87,9 +89,10 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
-  class Failure400Test < MakingRequestsTest
+  class Failure400Tests < MakingRequestsTests
     desc "when a request fails with a 400"
     setup do
       @fake_server.add_handler('v1', '400'){|params| [ 400, false ] }
@@ -105,9 +108,10 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
-  class Failure404Test < MakingRequestsTest
+  class Failure404Tests < MakingRequestsTests
     desc "when a request fails with a 404"
     setup do
       @fake_server.add_handler('v1', '404'){|params| [ 404, false ] }
@@ -123,9 +127,10 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
-  class Failure4xxTest < MakingRequestsTest
+  class Failure4xxTests < MakingRequestsTests
     desc "when a request fails with a 4xx"
     setup do
       @fake_server.add_handler('v1', '4xx'){|params| [ 402, false ] }
@@ -141,9 +146,10 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
-  class Failure5xxTest < MakingRequestsTest
+  class Failure5xxTests < MakingRequestsTests
     desc "when a request fails with a 5xx"
     setup do
       @fake_server.add_handler('v1', '5xx'){|params| [ 500, false ] }
@@ -159,9 +165,10 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
-  class TimeoutErrorTest < MakingRequestsTest
+  class TimeoutErrorTests < MakingRequestsTests
     desc "when a request takes to long to respond"
     setup do
       @fake_server.add_handler('v1', 'forever') do |params|
@@ -180,6 +187,7 @@ class MakingRequestsTest < Assert::Context
 
       end
     end
+
   end
 
 end
