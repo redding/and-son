@@ -8,6 +8,7 @@ class FakeServer
     @handlers = {}
 
     @closing_server = !!options[:closing_server]
+    @slow = !!options[:slow]
   end
 
   def add_handler(version, name, &block)
@@ -22,6 +23,8 @@ class FakeServer
       sleep 0.1 # ensure the connection isn't closed before a client can run
                 # IO.select
       socket.close
+    elsif @slow
+      sleep 0.5
     else
       serve(socket)
     end
@@ -37,6 +40,7 @@ class FakeServer
     status, result = route(request)
     response = Sanford::Protocol::Response.new(status, result)
     connection.write(response.to_hash)
+    connection.close_write
   end
 
   def route(request)
@@ -61,6 +65,11 @@ class FakeServer
 
     def start_closing_server(port, &block)
       server = FakeServer.new(port, :closing_server => true)
+      run_fake_server(server, &block)
+    end
+
+    def start_slow_server(port, &block)
+      server = FakeServer.new(port, :slow => true)
       run_fake_server(server, &block)
     end
 

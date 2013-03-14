@@ -1,4 +1,5 @@
 require 'assert'
+require 'test/support/fake_connection'
 require 'test/support/fake_server'
 require 'and-son/stored_responses'
 require 'and-son/client'
@@ -67,17 +68,54 @@ class AndSon::Client
         subject.params('test')
       end
     end
+    should "track its stored responses" do
+      assert_kind_of AndSon::StoredResponses, subject.responses
+    end
+
+  end
+
+  class CallTest < BaseTests
+    desc "call"
+    setup do
+      @connection = AndSon::Connection.new('localhost', 12001)
+      @response = AndSon::Response.parse({ 'status' => [200] })
+      @fake_connection = FakeConnection.new
+      AndSon::Connection.stubs(:new).returns(@connection)
+    end
+    teardown do
+      AndSon::Connection.unstub(:new)
+    end
+
+    should "write a request to the connection" do
+      @connection.stubs(:open).yields(@fake_connection).returns(@response)
+
+      client = AndSon::Client.new('localhost', 12001, 'v1').call('echo', {
+        :message => 'test'
+      })
+
+      request_data = @fake_connection.written.first
+      assert_equal 'v1',                    request_data['version']
+      assert_equal 'echo',                  request_data['name']
+      assert_equal({ 'message' => 'test' }, request_data['params'])
+    end
+
+    should "close the write stream" do
+      @connection.stubs(:open).yields(@fake_connection).returns(@response)
+
+      client = AndSon::Client.new('localhost', 12001, 'v1').call('echo', {
+        :message => 'test'
+      })
+
+      assert @fake_connection.write_stream_closed?
+    end
 
     should "raise an ArgumentError when #call is not passed a Hash for params" do
-      runner = subject.timeout(0.1) # in case it actually tries to make the request
+      client = AndSon::Client.new('localhost', 12001, 'v1')
+      runner = client.timeout(0.1) # in case it actually tries to make the request
 
       assert_raises(ArgumentError) do
         runner.call('something', 'test')
       end
-    end
-
-    should "track its stored responses" do
-      assert_kind_of AndSon::StoredResponses, subject.responses
     end
 
     should "raise a ConnectionClosedError when the server closes the connection" do
@@ -91,8 +129,5 @@ class AndSon::Client
     end
 
   end
-
-  # the `call` method is tested in the file test/system/making_requests_test.rb,
-  # because there is a lot of setup needed to call this method
 
 end

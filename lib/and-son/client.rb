@@ -107,6 +107,7 @@ module AndSon
       call_params = self.params_value.merge(params)
       AndSon::Connection.new(host, port).open do |connection|
         connection.write(Sanford::Protocol::Request.new(version, name, call_params).to_hash)
+        connection.close_write
         if !connection.peek(timeout_value).empty?
           AndSon::Response.parse(connection.read(timeout_value))
         else
