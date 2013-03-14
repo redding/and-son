@@ -1,8 +1,9 @@
 require 'assert'
+require 'and-son'
 
 module AndSon
 
-  class BaseTest < Assert::Context
+  class BaseTests < Assert::Context
     desc "AndSon"
     subject{ AndSon }
 

@@ -1,4 +1,5 @@
 require 'assert'
+require 'and-son/stored_responses'
 
 class AndSon::StoredResponses
 

@@ -1,11 +1,9 @@
-require 'ostruct'
+# this file is automatically required when you run `assert`
+# put any test helpers here
 
-ROOT = File.expand_path('../..', __FILE__)
+# add the root dir to the load path
+$LOAD_PATH.unshift(File.expand_path("../..", __FILE__))
 
-require 'and-son'
-
-require 'test/support/fake_server'
-
-if defined?(Assert)
-  require 'assert-mocha'
-end
+# require pry for debugging (`binding.pry`)
+require 'pry'
+require 'assert-mocha' if defined?(Assert)

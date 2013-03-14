@@ -1,3 +1,5 @@
+require 'socket'
+
 class FakeServer
 
   def initialize(port, options = nil)
