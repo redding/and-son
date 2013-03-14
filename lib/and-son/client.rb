@@ -86,7 +86,16 @@ module AndSon
         client_response ||= self.call!(name, params)
       end
 
-      self.logger_value.info("[AndSon] #{summary_line(name, params, benchmark, client_response)}")
+      summary_line = SummaryLine.new({
+        'time'    => RoundedTime.new(benchmark.real),
+        'status'  => client_response.protocol_response.code,
+        'host'    => "#{self.host}:#{self.port}",
+        'version' => self.version,
+        'service' => name,
+        'params'  => params
+      })
+      self.logger_value.info("[AndSon] #{summary_line}")
+
       if block_given?
         yield client_response.protocol_response
       else
@@ -106,44 +115,6 @@ module AndSon
       end
     end
 
-    protected
-
-    def summary_line(name, params, benchmark, client_response)
-      response = client_response.protocol_response
-      SummaryLine.new.tap do |line|
-        line.add 'host',    "#{self.host}:#{self.port}"
-        line.add 'version',  self.version
-        line.add 'service',  name
-        line.add 'params',   params
-        line.add 'status',   response.code
-        line.add 'duration', self.round_time(benchmark.real)
-      end
-    end
-
-    ROUND_PRECISION = 2
-    ROUND_MODIFIER = 10 ** ROUND_PRECISION
-    def round_time(time_in_seconds)
-      (time_in_seconds * 1000 * ROUND_MODIFIER).to_i / ROUND_MODIFIER.to_f
-    end
-
-  end
-
-  class SummaryLine
-
-    def initialize
-      @hash = {}
-    end
-
-    def add(key, value)
-      @hash[key] = value.inspect if value
-    end
-
-    def to_s
-      [ 'host', 'version', 'service', 'status', 'duration', 'params' ].map do |key|
-        "#{key}=#{@hash[key]}" if @hash[key]
-      end.compact.join(" ")
-    end
-
   end
 
   class ConnectionClosedError < RuntimeError
@@ -155,6 +126,21 @@ module AndSon
   class NullLogger
     ::Logger::Severity.constants.each do |name|
       define_method(name.downcase){|*args| } # no-op
+    end
+  end
+
+  module SummaryLine
+    def self.new(line_attrs)
+      attr_keys = %w{time status host version service params}
+      attr_keys.map{ |k| "#{k}=#{line_attrs[k].inspect}" }.join(' ')
+    end
+  end
+
+  module RoundedTime
+    ROUND_PRECISION = 2
+    ROUND_MODIFIER = 10 ** ROUND_PRECISION
+    def self.new(time_in_seconds)
+      (time_in_seconds * 1000 * ROUND_MODIFIER).to_i / ROUND_MODIFIER.to_f
     end
   end
 
