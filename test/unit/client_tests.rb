@@ -11,12 +11,12 @@ class AndSon::Client
 
     desc "AndSon::Client"
     setup do
-      @host, @port, @version = '0.0.0.0', 8000, "v1"
-      @client = AndSon::Client.new(@host, @port, @version)
+      @host, @port = '0.0.0.0', 8000
+      @client = AndSon::Client.new(@host, @port)
     end
     subject{ @client }
 
-    should have_imeths :host, :port, :version, :responses
+    should have_imeths :host, :port, :responses
     should have_imeths :call_runner, :call, :timeout, :logger, :params
 
     should "know its default call runner" do
@@ -24,7 +24,6 @@ class AndSon::Client
 
       assert_equal @host, default_runner.host
       assert_equal @port, default_runner.port
-      assert_equal @version, default_runner.version
       assert_equal 60.0, default_runner.timeout_value
       assert_instance_of AndSon::NullLogger, default_runner.logger_value
     end
@@ -89,12 +88,11 @@ class AndSon::Client
     should "write a request to the connection" do
       @connection.stubs(:open).yields(@fake_connection).returns(@response)
 
-      client = AndSon::Client.new('localhost', 12001, 'v1').call('echo', {
+      client = AndSon::Client.new('localhost', 12001).call('echo', {
         :message => 'test'
       })
 
       request_data = @fake_connection.written.first
-      assert_equal 'v1',                    request_data['version']
       assert_equal 'echo',                  request_data['name']
       assert_equal({ 'message' => 'test' }, request_data['params'])
     end
@@ -102,7 +100,7 @@ class AndSon::Client
     should "close the write stream" do
       @connection.stubs(:open).yields(@fake_connection).returns(@response)
 
-      client = AndSon::Client.new('localhost', 12001, 'v1').call('echo', {
+      client = AndSon::Client.new('localhost', 12001).call('echo', {
         :message => 'test'
       })
 
@@ -110,7 +108,7 @@ class AndSon::Client
     end
 
     should "raise an ArgumentError when #call is not passed a Hash for params" do
-      client = AndSon::Client.new('localhost', 12001, 'v1')
+      client = AndSon::Client.new('localhost', 12001)
       runner = client.timeout(0.1) # in case it actually tries to make the request
 
       assert_raises(ArgumentError) do
@@ -120,7 +118,7 @@ class AndSon::Client
 
     should "raise a ConnectionClosedError when the server closes the connection" do
       self.start_closing_server(12001) do
-        client = AndSon::Client.new('localhost', 12001, 'v1')
+        client = AndSon::Client.new('localhost', 12001)
 
         assert_raises(AndSon::ConnectionClosedError) do
           client.call('anything')

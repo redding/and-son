@@ -43,10 +43,10 @@ module AndSon
 
     DEFAULT_TIMEOUT = 60 #seconds
 
-    attr_reader :host, :port, :version, :responses
+    attr_reader :host, :port, :responses
 
-    def initialize(host, port, version)
-      @host, @port, @version = host, port, version
+    def initialize(host, port)
+      @host, @port = host, port
       @responses = AndSon::StoredResponses.new
     end
 
@@ -58,7 +58,6 @@ module AndSon
       CallRunner.new({
         :host     => host,
         :port     => port,
-        :version  => version,
         :timeout_value => (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f,
         :params_value  => {},
         :logger_value  => NullLogger.new,
@@ -68,8 +67,7 @@ module AndSon
   end
 
   class CallRunner < OpenStruct
-    # { :host, :port, :version, :timeout_value, :params_value, :logger_value,
-    #   :responses }
+    # { :host, :port, :timeout_value, :params_value, :logger_value, :responses }
     include CallRunnerMethods
 
     # chain runner methods by returning itself
@@ -90,7 +88,6 @@ module AndSon
         'time'    => RoundedTime.new(benchmark.real),
         'status'  => client_response.protocol_response.code,
         'host'    => "#{self.host}:#{self.port}",
-        'version' => self.version,
         'service' => name,
         'params'  => params
       })
@@ -106,7 +103,7 @@ module AndSon
     def call!(name, params)
       call_params = self.params_value.merge(params)
       AndSon::Connection.new(host, port).open do |connection|
-        connection.write(Sanford::Protocol::Request.new(version, name, call_params).to_hash)
+        connection.write(Sanford::Protocol::Request.new(name, call_params).to_hash)
         connection.close_write
         if !connection.peek(timeout_value).empty?
           AndSon::Response.parse(connection.read(timeout_value))
@@ -132,7 +129,7 @@ module AndSon
 
   module SummaryLine
     def self.new(line_attrs)
-      attr_keys = %w{time status host version service params}
+      attr_keys = %w{time status host service params}
       attr_keys.map{ |k| "#{k}=#{line_attrs[k].inspect}" }.join(' ')
     end
   end
