@@ -11,8 +11,8 @@ class FakeServer
     @slow = !!options[:slow]
   end
 
-  def add_handler(version, name, &block)
-    @handlers["#{version}-#{name}"] = block
+  def add_handler(name, &block)
+    @handlers[name] = block
   end
 
   def run
@@ -44,7 +44,7 @@ class FakeServer
   end
 
   def route(request)
-    handler = @handlers["#{request.version}-#{request.name}"]
+    handler = @handlers[request.name]
     returned = handler.call(request.params)
   end
 
