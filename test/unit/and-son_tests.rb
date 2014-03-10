@@ -3,7 +3,7 @@ require 'and-son'
 
 module AndSon
 
-  class BaseTests < Assert::Context
+  class UnitTests < Assert::Context
     desc "AndSon"
     subject{ AndSon }
 

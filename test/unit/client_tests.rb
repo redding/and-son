@@ -6,7 +6,7 @@ require 'and-son/client'
 
 class AndSon::Client
 
-  class BaseTests < Assert::Context
+  class UnitTests < Assert::Context
     include FakeServer::Helper
 
     desc "AndSon::Client"
@@ -73,7 +73,7 @@ class AndSon::Client
 
   end
 
-  class CallTest < BaseTests
+  class CallTest < UnitTests
     desc "call"
     setup do
       @connection = AndSon::Connection.new('localhost', 12001)

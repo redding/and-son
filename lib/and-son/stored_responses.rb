@@ -11,17 +11,19 @@ module AndSon
       @hash = {}
     end
 
-    def add(name, params = nil)
+    def add(name, params = nil, &response_block)
       request_data = RequestData.new(name, params || {})
-      response = yield
-      if !response.kind_of?(Sanford::Protocol::Response)
-        response = Sanford::Protocol::Response.new(200, response)
-      end
-      @hash[request_data] = AndSon::Response.new(response)
+      @hash[request_data] = response_block
     end
 
     def find(name, params = nil)
-      @hash[RequestData.new(name, params || {})]
+      response_block = @hash[RequestData.new(name, params || {})]
+      return if !response_block
+      response = response_block.call
+      if !response.kind_of?(Sanford::Protocol::Response)
+        response = Sanford::Protocol::Response.new(200, response)
+      end
+      AndSon::Response.new(response)
     end
 
     def remove(name, params = nil)
