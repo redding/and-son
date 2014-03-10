@@ -3,7 +3,7 @@ require 'and-son/stored_responses'
 
 class AndSon::StoredResponses
 
-  class BaseTest < Assert::Context
+  class UnitTests < Assert::Context
     desc "AndSon::StoredResponses"
     setup do
       @responses = AndSon::StoredResponses.new
@@ -14,7 +14,7 @@ class AndSon::StoredResponses
 
   end
 
-  class AddTest < BaseTest
+  class AddTest < UnitTests
     desc "add"
 
     should "allow adding responses given an name and optional params" do
@@ -46,11 +46,13 @@ class AndSon::StoredResponses
 
   end
 
-  class FindTest < BaseTest
+  class FindTest < UnitTests
     desc "find"
     setup do
       @responses.add('test', { 'id' => 1 }){ true }
       @responses.add('test'){ true }
+      @service_called = false
+      @responses.add('call_service'){ @service_called = true }
     end
 
     should "allow finding a response given a name and optional params" do
@@ -61,9 +63,15 @@ class AndSon::StoredResponses
       assert_equal true, response.data
     end
 
+    should "not call the response block until `find` is called" do
+      assert_false @service_called
+      subject.find('call_service')
+      assert_true @service_called
+    end
+
   end
 
-  class RemoveTest < BaseTest
+  class RemoveTest < UnitTests
     desc "remove"
     setup do
       @responses.add('test', { 'id' => 1 }){ true }

@@ -19,6 +19,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency("sanford-protocol",  ["~>0.6"])
 
-  gem.add_development_dependency("assert",        ["~>2.3"])
+  gem.add_development_dependency("assert",        ["~>2.9"])
   gem.add_development_dependency("assert-mocha",  ["~>1.0"])
 end

@@ -3,7 +3,7 @@ require 'and-son/response'
 
 class AndSon::Response
 
-  class BaseTests < Assert::Context
+  class UnitTests < Assert::Context
     desc "AndSon::Response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new([ 200, 'message' ], 'data')
@@ -26,7 +26,7 @@ class AndSon::Response
 
   end
 
-  class FailedResponseTests < BaseTests
+  class FailedResponseTests < UnitTests
     desc "given a failed response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new([ 500, 'message' ])
@@ -45,7 +45,7 @@ class AndSon::Response
 
   end
 
-  class Response5xxTests < BaseTests
+  class Response5xxTests < UnitTests
     desc "given a 5xx response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(500)
@@ -61,7 +61,7 @@ class AndSon::Response
 
   end
 
-  class Response404Tests < BaseTests
+  class Response404Tests < UnitTests
     desc "given a 404 response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(404)
@@ -78,7 +78,7 @@ class AndSon::Response
 
   end
 
-  class Response400Tests < BaseTests
+  class Response400Tests < UnitTests
     desc "given a 400 response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(400)
@@ -95,7 +95,7 @@ class AndSon::Response
 
   end
 
-  class Response4xxTests < BaseTests
+  class Response4xxTests < UnitTests
     desc "given a 4xx response"
     setup do
       @protocol_response = Sanford::Protocol::Response.new(402)
