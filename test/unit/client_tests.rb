@@ -1,8 +1,9 @@
 require 'assert'
+require 'and-son/client'
+
+require 'and-son/stored_responses'
 require 'test/support/fake_connection'
 require 'test/support/fake_server'
-require 'and-son/stored_responses'
-require 'and-son/client'
 
 class AndSon::Client
 

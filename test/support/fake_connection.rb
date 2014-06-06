@@ -1,4 +1,5 @@
 class FakeConnection
+
   attr_reader :written
 
   def initialize

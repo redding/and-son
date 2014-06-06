@@ -11,6 +11,7 @@ Gem::Specification.new do |gem|
   gem.description   = "Simple Sanford client for Ruby."
   gem.summary       = "Simple Sanford client for Ruby."
   gem.homepage      = "https://github.com/redding/and-son"
+  gem.license       = 'MIT'
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
@@ -19,6 +20,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency("sanford-protocol",  ["~>0.6"])
 
-  gem.add_development_dependency("assert",        ["~>2.9"])
-  gem.add_development_dependency("assert-mocha",  ["~>1.0"])
+  gem.add_development_dependency("assert",        ["~>2.10"])
+  gem.add_development_dependency("assert-mocha",  ["~>1.1"])
 end

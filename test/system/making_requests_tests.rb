@@ -1,6 +1,7 @@
 require 'assert'
-require 'test/support/fake_server'
 require 'and-son'
+
+require 'test/support/fake_server'
 
 class MakingRequestsTests < Assert::Context
   include FakeServer::Helper
