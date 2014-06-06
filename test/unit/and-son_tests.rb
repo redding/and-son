@@ -7,7 +7,7 @@ module AndSon
     desc "AndSon"
     subject{ AndSon }
 
-    should have_instance_methods :new
+    should have_imeths :new
 
   end
 

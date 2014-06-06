@@ -10,7 +10,7 @@ class AndSon::StoredResponses
     end
     subject{ @responses }
 
-    should have_instance_methods :add, :remove, :find
+    should have_imeths :add, :remove, :find
 
   end
 
@@ -39,9 +39,9 @@ class AndSon::StoredResponses
       subject.add('test'){ true }
       response = subject.find('test').protocol_response
 
-      assert_equal 200,   response.code
-      assert_equal nil,   response.status.message
-      assert_equal true,  response.data
+      assert_equal 200,  response.code
+      assert_equal nil,  response.status.message
+      assert_equal true, response.data
     end
 
   end
@@ -83,7 +83,7 @@ class AndSon::StoredResponses
       assert_nil subject.find('test', { 'id' => 1 })
 
       subject.remove('test')
-      assert_nil      subject.find('test')
+      assert_nil subject.find('test')
     end
 
   end
