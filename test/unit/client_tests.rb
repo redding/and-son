@@ -80,14 +80,14 @@ class AndSon::Client
       @connection = AndSon::Connection.new('localhost', 12001)
       @response = AndSon::Response.parse({ 'status' => [200] })
       @fake_connection = FakeConnection.new
-      AndSon::Connection.stubs(:new).returns(@connection)
-    end
-    teardown do
-      AndSon::Connection.unstub(:new)
+      Assert.stub(AndSon::Connection, :new){ @connection }
     end
 
     should "write a request to the connection" do
-      @connection.stubs(:open).yields(@fake_connection).returns(@response)
+      Assert.stub(@connection, :open) do |&block|
+        block.call(@fake_connection)
+        @response
+      end
 
       client = AndSon::Client.new('localhost', 12001).call('echo', {
         :message => 'test'
@@ -99,7 +99,10 @@ class AndSon::Client
     end
 
     should "close the write stream" do
-      @connection.stubs(:open).yields(@fake_connection).returns(@response)
+      Assert.stub(@connection, :open) do |&block|
+        block.call(@fake_connection)
+        @response
+      end
 
       client = AndSon::Client.new('localhost', 12001).call('echo', {
         :message => 'test'
