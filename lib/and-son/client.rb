@@ -68,6 +68,14 @@ module AndSon
 
     def call_runner; self; end
 
+    def add_response(*args, &block)
+      self.responses.add(*args, &block)
+    end
+
+    def remove_response(*args)
+      self.responses.remove(*args)
+    end
+
     def reset
       self.calls.clear
       self.responses.remove_all
