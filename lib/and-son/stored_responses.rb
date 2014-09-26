@@ -18,10 +18,7 @@ module AndSon
 
     def get(name, params = nil)
       response_block = @hash[RequestData.new(name, params || {})]
-      response = response_block.call
-      if !response.kind_of?(Sanford::Protocol::Response)
-        response = Sanford::Protocol::Response.new(200, response)
-      end
+      response = handle_response_block(response_block)
       AndSon::Response.new(response)
     end
 
@@ -35,8 +32,20 @@ module AndSon
 
     private
 
+    def handle_response_block(response_block)
+      if response_block.arity == 0 || response_block.arity == -1
+        default_response.tap{ |r| r.data = response_block.call }
+      else
+        default_response.tap{ |r| response_block.call(r) }
+      end
+    end
+
+    def default_response
+      Sanford::Protocol::Response.new(200, {})
+    end
+
     def default_response_proc
-      proc{ Sanford::Protocol::Response.new(200, {}) }
+      proc{ |r| r.data = Hash.new }
     end
 
   end
