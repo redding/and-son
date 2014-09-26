@@ -6,11 +6,30 @@ class AndSon::StoredResponses
   class UnitTests < Assert::Context
     desc "AndSon::StoredResponses"
     setup do
+      @name = Factory.string
+      @params = { Factory.string => Factory.string }
+
+      @protocol_response = Sanford::Protocol::Response.new(
+        [ Factory.integer, Factory.string ],
+        Factory.string
+      )
+
       @responses = AndSon::StoredResponses.new
     end
     subject{ @responses }
 
-    should have_imeths :add, :remove, :get
+    should have_imeths :add, :remove, :get, :remove_all
+
+    should "allow removing all responses" do
+      subject.add(@name, @params){ @protocol_response }
+      subject.add(@name){ @protocol_response }
+
+      subject.remove_all
+      protocol_response = subject.get(@name, @params).protocol_response
+      assert_not_equal @protocol_response, protocol_response
+      protocol_response = subject.get(@name).protocol_response
+      assert_not_equal @protocol_response, protocol_response
+    end
 
   end
 
