@@ -10,7 +10,6 @@ class AndSon::CallRunner
     setup do
       @host = Factory.string
       @port = Factory.integer
-      @responses = AndSon::StoredResponses.new
 
       @call_runner_class = AndSon::CallRunner
     end
@@ -25,18 +24,17 @@ class AndSon::CallRunner
   class InitTests < UnitTests
     desc "when init"
     setup do
-      @call_runner = @call_runner_class.new(@host, @port, @responses)
+      @call_runner = @call_runner_class.new(@host, @port)
     end
     subject{ @call_runner }
 
-    should have_readers :host, :port, :responses
+    should have_readers :host, :port
     should have_accessors :params_value, :timeout_value, :logger_value
     should have_imeths :call_runner
 
-    should "know its host, port and responses" do
+    should "know its host and port" do
       assert_equal @host, subject.host
       assert_equal @port, subject.port
-      assert_equal @responses, subject.responses
     end
 
     should "default its params, timeout and logger" do
@@ -57,7 +55,7 @@ class AndSon::CallRunner
       @current_timeout = ENV['ANDSON_TIMEOUT']
       ENV['ANDSON_TIMEOUT'] = Factory.integer.to_s
 
-      @call_runner = @call_runner_class.new(@host, @port, @responses)
+      @call_runner = @call_runner_class.new(@host, @port)
     end
     teardown do
       ENV['ANDSON_TIMEOUT'] = @current_timeout
@@ -181,39 +179,8 @@ class AndSon::CallRunner
       assert_match regex, @logger_spy.output
     end
 
-    should "not use stored responses even if they are configured" do
-      response_data = Factory.string
-      subject.responses.add(@name, @params){ response_data }
-      assert_not_equal response_data, subject.call(@name, @params)
-    end
-
     should "raise an argument error when not passed a hash for params" do
       assert_raises(ArgumentError){ subject.call(@name, Factory.string) }
-    end
-
-  end
-
-  class CallInTestModeTests < CallSetupTests
-    desc "call method in test mode"
-    setup do
-      @current_timeout = ENV['ANDSON_TEST_MODE']
-      ENV['ANDSON_TEST_MODE'] = 'yes'
-
-      Assert.stub(@call_runner, :call!){ |name, params| @response }
-    end
-    teardown do
-      ENV['ANDSON_TEST_MODE'] = @current_timeout
-    end
-
-    should "use a stored response when they are configured" do
-      response_data = Factory.string
-      subject.responses.add(@name, @params){ response_data }
-      assert_equal response_data, subject.call(@name, @params)
-    end
-
-    should "call `call!` when a stored response isn't configured" do
-      result = subject.call(@name, @params)
-      assert_equal @response.data, result
     end
 
   end

@@ -6,16 +6,28 @@ module AndSon::Client
   class UnitTests < Assert::Context
     desc "AndSon::Client"
     setup do
+      @current_timeout = ENV['ANDSON_TEST_MODE']
+      ENV['ANDSON_TEST_MODE'] = 'yes'
+
       @host = Factory.string
       @port = Factory.integer
+    end
+    teardown do
+      ENV['ANDSON_TEST_MODE'] = @current_timeout
     end
     subject{ AndSon::Client }
 
     should have_imeths :new
 
     should "return an and-son client using `new`" do
+      ENV.delete('ANDSON_TEST_MODE')
       client = subject.new(@host, @port)
       assert_instance_of AndSon::AndSonClient, client
+    end
+
+    should "return a test client using `new` in test mode" do
+      client = subject.new(@host, @port)
+      assert_instance_of AndSon::TestClient, client
     end
 
   end
@@ -42,15 +54,11 @@ module AndSon::Client
     end
     subject{ @client }
 
-    should have_readers :host, :port, :responses
+    should have_readers :host, :port
 
     should "know its host and port" do
       assert_equal @host, subject.host
       assert_equal @port, subject.port
-    end
-
-    should "know its stored responses" do
-      assert_instance_of AndSon::StoredResponses, subject.responses
     end
 
   end
@@ -69,7 +77,6 @@ module AndSon::Client
       assert_instance_of AndSon::CallRunner, runner
       assert_equal subject.host, runner.host
       assert_equal subject.port, runner.port
-      assert_equal subject.responses, runner.responses
       assert_not_same runner, subject.call_runner
     end
 
@@ -92,6 +99,38 @@ module AndSon::Client
       assert_equal [@service_name, @service_params], @call_runner_spy.call_args
       assert_equal @response_block, @call_runner_spy.call_block
       assert_equal @call_runner_spy.call_response, @response
+    end
+
+  end
+
+  class TestClientTests < UnitTests
+    desc "TestClient"
+    setup do
+      @client = AndSon::TestClient.new(@host, @port)
+      data = Factory.string
+      @client.responses.add(@name, @params){ data }
+      @response = @client.responses.get(@name, @params)
+    end
+    subject{ @client }
+
+    should have_readers :responses
+
+    should "know its stored responses" do
+      assert_instance_of AndSon::StoredResponses, subject.responses
+    end
+
+    should "know its call runner" do
+      subject
+    end
+
+    should "return a stored response using `call`" do
+      assert_equal @response.data, subject.call(@name, @params)
+    end
+
+    should "yield a stored response using `call` with a block" do
+      yielded = nil
+      subject.call(@name, @params){ |response| yielded = response }
+      assert_equal @response.protocol_response, yielded
     end
 
   end

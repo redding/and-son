@@ -6,7 +6,11 @@ module AndSon
   module Client
 
     def self.new(host, port)
-      AndSonClient.new(host, port)
+      if !ENV['ANDSON_TEST_MODE']
+        AndSonClient.new(host, port)
+      else
+        TestClient.new(host, port)
+      end
     end
 
     def self.included(klass)
@@ -18,11 +22,10 @@ module AndSon
 
     module InstanceMethods
 
-      attr_reader :host, :port, :responses
+      attr_reader :host, :port
 
       def initialize(host, port)
         @host, @port = host, port
-        @responses = AndSon::StoredResponses.new
       end
 
     end
@@ -36,9 +39,32 @@ module AndSon
     def call(*args, &block); self.call_runner.call(*args, &block); end
 
     def call_runner
-      AndSon::CallRunner.new(host, port, @responses)
+      AndSon::CallRunner.new(host, port)
     end
 
+  end
+
+  class TestClient
+    include Client
+
+    attr_reader :responses
+
+    def initialize(host, port)
+      super
+      @responses = AndSon::StoredResponses.new
+    end
+
+    def call(name, params = nil)
+      params ||= {}
+      response = self.responses.get(name, params)
+      if block_given?
+        yield response.protocol_response
+      else
+        response.data
+      end
+    end
+
+    def call_runner; self; end
   end
 
 end
