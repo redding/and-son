@@ -29,6 +29,10 @@ module AndSon
       @hash.delete(RequestData.new(name, params || {}))
     end
 
+    def remove_all
+      @hash.clear
+    end
+
     private
 
     def default_response_proc

@@ -106,6 +106,9 @@ module AndSon::Client
   class TestClientTests < UnitTests
     desc "TestClient"
     setup do
+      @name = Factory.string
+      @params = { Factory.string => Factory.string }
+
       @client = AndSon::TestClient.new(@host, @port)
       data = Factory.string
       @client.responses.add(@name, @params){ data }
@@ -113,7 +116,8 @@ module AndSon::Client
     end
     subject{ @client }
 
-    should have_readers :responses
+    should have_readers :calls, :responses
+    should have_imeths :reset
 
     should "know its stored responses" do
       assert_instance_of AndSon::StoredResponses, subject.responses
@@ -121,6 +125,18 @@ module AndSon::Client
 
     should "know its call runner" do
       subject
+    end
+
+    should "store each call made in its `calls`" do
+      assert_equal [], subject.calls
+      subject.call(@name, @params)
+      assert_equal 1, subject.calls.size
+
+      call = subject.calls.last
+      assert_instance_of AndSon::TestClient::Call, call
+      assert_equal @name, call.request_name
+      assert_equal @params, call.request_params
+      assert_equal @response.protocol_response, call.response
     end
 
     should "return a stored response using `call`" do
@@ -131,6 +147,16 @@ module AndSon::Client
       yielded = nil
       subject.call(@name, @params){ |response| yielded = response }
       assert_equal @response.protocol_response, yielded
+    end
+
+    should "clear its calls and remove all its configured responses using `reset`" do
+      subject.call(@name, @params)
+      assert_not_equal [], subject.calls
+      assert_equal @response, subject.responses.get(@name, @params)
+
+      subject.reset
+      assert_equal [], subject.calls
+      assert_not_equal @response, subject.responses.get(@name, @params)
     end
 
   end
