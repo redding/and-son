@@ -10,7 +10,7 @@ class AndSon::StoredResponses
     end
     subject{ @responses }
 
-    should have_imeths :add, :remove, :find
+    should have_imeths :add, :remove, :get
 
   end
 
@@ -21,14 +21,14 @@ class AndSon::StoredResponses
       subject.add('test', { 'id' => 1 }) do
         Sanford::Protocol::Response.new([ 404, 'not found' ])
       end
-      response = subject.find('test', { 'id' => 1 }).protocol_response
+      response = subject.get('test', { 'id' => 1 }).protocol_response
 
       assert_equal 404,         response.code
       assert_equal 'not found', response.status.message
       assert_equal nil,         response.data
 
       subject.add('test'){ Sanford::Protocol::Response.new([ 404, 'not found' ]) }
-      response = subject.find('test').protocol_response
+      response = subject.get('test').protocol_response
 
       assert_equal 404,         response.code
       assert_equal 'not found', response.status.message
@@ -37,7 +37,7 @@ class AndSon::StoredResponses
 
     should "default the response as a 200 when only given response data" do
       subject.add('test'){ true }
-      response = subject.find('test').protocol_response
+      response = subject.get('test').protocol_response
 
       assert_equal 200,  response.code
       assert_equal nil,  response.status.message
@@ -46,8 +46,8 @@ class AndSon::StoredResponses
 
   end
 
-  class FindTest < UnitTests
-    desc "find"
+  class GetTest < UnitTests
+    desc "get"
     setup do
       @responses.add('test', { 'id' => 1 }){ true }
       @responses.add('test'){ true }
@@ -55,17 +55,25 @@ class AndSon::StoredResponses
       @responses.add('call_service'){ @service_called = true }
     end
 
-    should "allow finding a response given a name and optional params" do
-      response = subject.find('test', { 'id' => 1 }).protocol_response
+    should "return a default response with a name/params that aren't configured" do
+      response = subject.get(Factory.string, { Factory.string => Factory.string })
+      protocol_response = response.protocol_response
+      assert_equal 200, protocol_response.code
+      assert_nil protocol_response.status.message
+      assert_equal({}, protocol_response.data)
+    end
+
+    should "allow geting a response given a name and optional params" do
+      response = subject.get('test', { 'id' => 1 }).protocol_response
       assert_equal true, response.data
 
-      response = subject.find('test').protocol_response
+      response = subject.get('test').protocol_response
       assert_equal true, response.data
     end
 
-    should "not call the response block until `find` is called" do
+    should "not call the response block until `get` is called" do
       assert_false @service_called
-      subject.find('call_service')
+      subject.get('call_service')
       assert_true @service_called
     end
 
@@ -79,11 +87,19 @@ class AndSon::StoredResponses
     end
 
     should "remove responses given a name and optional params" do
+      response = subject.get('test', { 'id' => 1 })
+      assert_equal true, response.data
+
       subject.remove('test', { 'id' => 1 })
-      assert_nil subject.find('test', { 'id' => 1 })
+      response = subject.get('test', { 'id' => 1 })
+      assert_not_equal true, response.data
+
+      response = subject.get('test')
+      assert_equal true, response.data
 
       subject.remove('test')
-      assert_nil subject.find('test')
+      response = subject.get('test')
+      assert_not_equal true, response.data
     end
 
   end

@@ -10,16 +10,15 @@ module AndSon
 
     DEFAULT_TIMEOUT = 60 # seconds
 
-    attr_reader :host, :port, :responses
+    attr_reader :host, :port
     attr_accessor :timeout_value, :params_value, :logger_value
 
-    def initialize(host, port, responses)
+    def initialize(host, port)
       @host = host
       @port = port
       @params_value = {}
       @timeout_value = (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f
       @logger_value = NullLogger.new
-      @responses = responses
     end
 
     # chain runner methods by returning itself
@@ -32,8 +31,7 @@ module AndSon
       end
       client_response = nil
       benchmark = Benchmark.measure do
-        client_response = self.responses.find(name, params) if ENV['ANDSON_TEST_MODE']
-        client_response ||= self.call!(name, params)
+        client_response = self.call!(name, params)
       end
 
       summary_line = SummaryLine.new({

@@ -8,7 +8,7 @@ module AndSon
     RequestData = Struct.new(:name, :params)
 
     def initialize
-      @hash = {}
+      @hash = Hash.new{ default_response_proc }
     end
 
     def add(name, params = nil, &response_block)
@@ -16,9 +16,8 @@ module AndSon
       @hash[request_data] = response_block
     end
 
-    def find(name, params = nil)
+    def get(name, params = nil)
       response_block = @hash[RequestData.new(name, params || {})]
-      return if !response_block
       response = response_block.call
       if !response.kind_of?(Sanford::Protocol::Response)
         response = Sanford::Protocol::Response.new(200, response)
@@ -28,6 +27,12 @@ module AndSon
 
     def remove(name, params = nil)
       @hash.delete(RequestData.new(name, params || {}))
+    end
+
+    private
+
+    def default_response_proc
+      proc{ Sanford::Protocol::Response.new(200, {}) }
     end
 
   end
