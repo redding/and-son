@@ -63,6 +63,20 @@ module AndSon
       end
     end
 
+    def hash
+      [ self.host,
+        self.port,
+        self.timeout_value,
+        self.params_value,
+        self.logger_value
+      ].hash
+    end
+
+    def ==(other)
+      other.kind_of?(self.class) ? self.hash == other.hash : super
+    end
+    alias :eql? :==
+
     module InstanceMethods
 
       # define methods here to allow configuring call runner params.  be sure to
@@ -113,6 +127,8 @@ module AndSon
       ::Logger::Severity.constants.each do |name|
         define_method(name.downcase){|*args| } # no-op
       end
+
+      def hash; 1; end
     end
 
   end

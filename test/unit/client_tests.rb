@@ -80,6 +80,23 @@ module AndSon::Client
       assert_not_same runner, subject.call_runner
     end
 
+    should "be comparable" do
+      matching = AndSon::AndSonClient.new(@host, @port)
+      assert_equal matching, subject
+
+      not_matching = AndSon::AndSonClient.new(Factory.string, Factory.integer)
+      assert_not_equal not_matching, subject
+    end
+
+    should "be hash comparable" do
+      assert_equal subject.call_runner.hash, subject.hash
+
+      matching = AndSon::AndSonClient.new(@host, @port)
+      assert_true subject.eql?(matching)
+      not_matching = AndSon::AndSonClient.new(Factory.string, Factory.integer)
+      assert_false subject.eql?(not_matching)
+    end
+
   end
 
   class AndSonClientCallTests < AndSonClientTests
@@ -116,8 +133,13 @@ module AndSon::Client
     end
     subject{ @client }
 
+    should have_accessors :timeout_value, :params_value, :logger_value
     should have_readers :calls, :responses
     should have_imeths :add_response, :remove_response, :reset
+
+    should "default its params value" do
+      assert_equal({}, subject.params_value)
+    end
 
     should "know its stored responses" do
       assert_instance_of AndSon::StoredResponses, subject.responses
@@ -168,6 +190,63 @@ module AndSon::Client
       subject.reset
       assert_equal [], subject.calls
       assert_not_equal @response, subject.responses.get(@name, @params)
+    end
+
+    should "be comparable" do
+      matching = AndSon::TestClient.new(@host, @port)
+      assert_equal matching, subject
+
+      not_matching = AndSon::TestClient.new(Factory.string, @port)
+      assert_not_equal not_matching, subject
+      not_matching = AndSon::TestClient.new(@host, Factory.integer)
+      assert_not_equal not_matching, subject
+      params = { Factory.string => Factory.string }
+      not_matching = AndSon::TestClient.new(@host, @port).params(params)
+      assert_not_equal not_matching, subject
+      not_matching = AndSon::TestClient.new(@host, @port).logger(Factory.string)
+      assert_not_equal not_matching, subject
+      not_matching = AndSon::TestClient.new(@host, @port).timeout(Factory.integer)
+      assert_not_equal not_matching, subject
+    end
+
+    should "be hash comparable" do
+      assert_equal subject.call_runner.hash, subject.hash
+
+      matching = AndSon::TestClient.new(@host, @port)
+      assert_true subject.eql?(matching)
+      not_matching = AndSon::TestClient.new(Factory.string, Factory.integer)
+      assert_false subject.eql?(not_matching)
+    end
+
+  end
+
+  class TestClientInstanceMethodsTests < TestClientTests
+
+    should "set its timeout value and return its call runner using `timeout`" do
+      timeout_value = Factory.integer
+      result = subject.timeout(timeout_value)
+      assert_equal timeout_value, subject.timeout_value
+      assert_same subject, result
+    end
+
+    should "update its params value and return its call runner using `params`" do
+      params_value = { Factory.string => Factory.string }
+      result = subject.params(params_value)
+      assert_equal params_value, subject.params_value
+      assert_same subject, result
+
+      new_key = Factory.string
+      new_value = Factory.string
+      subject.params({ new_key => new_value })
+      assert_equal 2, subject.params_value.keys.size
+      assert_equal new_value, subject.params_value[new_key]
+    end
+
+    should "set its logger value and return its call runner using `logger`" do
+      logger_value = Factory.string
+      result = subject.logger(logger_value)
+      assert_equal logger_value, subject.logger_value
+      assert_same subject, result
     end
 
   end
