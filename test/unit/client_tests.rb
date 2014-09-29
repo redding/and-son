@@ -111,13 +111,13 @@ module AndSon::Client
 
       @client = AndSon::TestClient.new(@host, @port)
       data = Factory.string
-      @client.responses.add(@name, @params){ data }
+      @client.add_response(@name, @params){ data }
       @response = @client.responses.get(@name, @params)
     end
     subject{ @client }
 
     should have_readers :calls, :responses
-    should have_imeths :reset
+    should have_imeths :add_response, :remove_response, :reset
 
     should "know its stored responses" do
       assert_instance_of AndSon::StoredResponses, subject.responses
@@ -147,6 +147,17 @@ module AndSon::Client
       yielded = nil
       subject.call(@name, @params){ |response| yielded = response }
       assert_equal @response.protocol_response, yielded
+    end
+
+    should "allow adding/removing stored responses" do
+      data = Factory.string
+      subject.add_response(@name, @params){ data }
+      response = subject.responses.get(@name, @params)
+      assert_equal data, response.data
+
+      subject.remove_response(@name, @params)
+      response = subject.responses.get(@name, @params)
+      assert_not_equal data, response.data
     end
 
     should "clear its calls and remove all its configured responses using `reset`" do

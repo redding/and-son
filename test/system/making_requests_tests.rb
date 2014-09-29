@@ -43,7 +43,7 @@ class MakingRequestsTests < Assert::Context
 
     should "return the registered response" do
       client = AndSon.new('localhost', 12000)
-      client.responses.add('echo', 'message' => 'test'){ 'test' }
+      client.add_response('echo', 'message' => 'test'){ 'test' }
 
       client.call('echo', 'message' => 'test') do |response|
         assert_equal 200,     response.code
