@@ -47,6 +47,32 @@ class AndSon::CallRunner
       assert_same subject, subject.call_runner
     end
 
+    should "be comparable" do
+      matching = @call_runner_class.new(@host, @port)
+      assert_equal matching, subject
+
+      not_matching = @call_runner_class.new(Factory.string, @port)
+      assert_not_equal not_matching, subject
+      not_matching = @call_runner_class.new(@host, Factory.integer)
+      assert_not_equal not_matching, subject
+      params = { Factory.string => Factory.string }
+      not_matching = @call_runner_class.new(@host, @port).params(params)
+      assert_not_equal not_matching, subject
+      not_matching = @call_runner_class.new(@host, @port).logger(Factory.string)
+      assert_not_equal not_matching, subject
+      not_matching = @call_runner_class.new(@host, @port).timeout(Factory.integer)
+      assert_not_equal not_matching, subject
+    end
+
+    should "be hash comparable" do
+      assert_equal subject.call_runner.hash, subject.hash
+
+      matching = @call_runner_class.new(@host, @port)
+      assert_true subject.eql?(matching)
+      not_matching = @call_runner_class.new(Factory.string, Factory.integer)
+      assert_false subject.eql?(not_matching)
+    end
+
   end
 
   class InitWithTimeoutEnvVarTests < UnitTests

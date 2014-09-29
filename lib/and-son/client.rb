@@ -42,15 +42,26 @@ module AndSon
       AndSon::CallRunner.new(host, port)
     end
 
+    def hash
+      self.call_runner.hash
+    end
+
+    def ==(other)
+      other.kind_of?(self.class) ? self.hash == other.hash : super
+    end
+    alias :eql? :==
+
   end
 
   class TestClient
     include Client
 
+    attr_accessor :timeout_value, :params_value, :logger_value
     attr_reader :calls, :responses
 
     def initialize(host, port)
       super
+      @params_value = {}
       @calls = []
       @responses = AndSon::StoredResponses.new
     end
@@ -80,6 +91,20 @@ module AndSon
       self.calls.clear
       self.responses.remove_all
     end
+
+    def hash
+      [ self.host,
+        self.port,
+        self.timeout_value,
+        self.params_value,
+        self.logger_value
+      ].hash
+    end
+
+    def ==(other)
+      other.kind_of?(self.class) ? self.hash == other.hash : super
+    end
+    alias :eql? :==
 
     Call = Struct.new(:request_name, :request_params, :response)
 
