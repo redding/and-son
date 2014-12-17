@@ -1,6 +1,6 @@
 require 'socket'
 
-class FakeServer
+class TestServer
 
   def initialize(port, options = nil)
     options ||= {}
@@ -16,7 +16,7 @@ class FakeServer
   end
 
   def run
-    server = TCPServer.new("localhost", @port)
+    server = TCPServer.new('127.0.0.1', @port)
     socket = server.accept
 
     if @closing_server
@@ -48,9 +48,9 @@ class FakeServer
     returned = handler.call(request.params)
   end
 
-  module Helper
+  module TestHelpers
 
-    def run_fake_server(server, &block)
+    def run_test_server(server, &block)
       begin
         thread = Thread.new{ server.run }
         yield
@@ -65,12 +65,12 @@ class FakeServer
 
     def start_closing_server(port, &block)
       server = FakeServer.new(port, :closing_server => true)
-      run_fake_server(server, &block)
+      run_test_server(server, &block)
     end
 
     def start_slow_server(port, &block)
       server = FakeServer.new(port, :slow => true)
-      run_fake_server(server, &block)
+      run_test_server(server, &block)
     end
 
   end
