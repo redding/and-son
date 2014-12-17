@@ -171,7 +171,9 @@ module AndSon::Client
       @service_name   = Factory.string
       @service_params = { Factory.string => Factory.string }
       @response_data  = Factory.string
-      @client.add_response(@service_name, @service_params){ @response_data }
+
+      @client.add_response(@service_name){ |r| r.code = 500 }
+      @client.add_response(@service_name).with(@service_params){ @response_data }
     end
     teardown do
       ENV.delete('ANDSON_TEST_MODE')
@@ -179,9 +181,22 @@ module AndSon::Client
 
     should "return the configured response when the name and params match" do
       @client.call(@service_name, @service_params) do |r|
-        assert_equal 200, r.code
         assert_equal @response_data, r.data
+      end
+    end
+
+    should "return a configured response when only the name matches" do
+      @client.call(@service_name, { Factory.string => Factory.string }) do |r|
+        assert_equal 500, r.code
+        assert_not_equal @response_data, r.data
+      end
+    end
+
+    should "return a default response when the name and params don't match" do
+      @client.call(Factory.string, { Factory.string => Factory.string }) do |r|
+        assert_equal 200, r.code
         assert_nil r.message
+        assert_equal({}, r.data)
       end
     end
 

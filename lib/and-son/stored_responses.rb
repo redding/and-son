@@ -5,47 +5,58 @@ module AndSon
 
   class StoredResponses
 
-    RequestData = Struct.new(:name, :params)
-
     def initialize
-      @hash = Hash.new{ default_response_proc }
+      @hash = Hash.new{ |h, k| h[k] = Stub.new }
     end
 
-    def add(name, params = nil, &response_block)
-      request_data = RequestData.new(name, params || {})
-      @hash[request_data] = response_block
+    def add(name, &block)
+      @hash[name].tap{ |s| s.set_default_proc(&block) }
     end
 
-    def get(name, params = nil)
-      response_block = @hash[RequestData.new(name, params || {})]
-      response = handle_response_block(response_block)
+    def get(name, params)
+      response = @hash[name].call(params)
       AndSon::Response.new(response)
     end
 
-    def remove(name, params = nil)
-      @hash.delete(RequestData.new(name, params || {}))
+    def remove(name)
+      @hash.delete(name)
     end
 
     def remove_all
       @hash.clear
     end
 
-    private
+    class Stub
+      attr_reader :hash
 
-    def handle_response_block(response_block)
-      if response_block.arity == 0 || response_block.arity == -1
-        default_response.tap{ |r| r.data = response_block.call }
-      else
-        default_response.tap{ |r| response_block.call(r) }
+      def initialize
+        @default_proc = proc{ |r| r.data = Hash.new }
+        @hash = {}
       end
-    end
 
-    def default_response
-      Sanford::Protocol::Response.new(200, {})
-    end
+      def set_default_proc(&block)
+        @default_proc = block if block
+      end
 
-    def default_response_proc
-      proc{ |r| r.data = Hash.new }
+      def with(params, &block)
+        @hash[params] = block
+        self
+      end
+
+      def call(params)
+        block = @hash[params] || @default_proc
+        if block.arity == 0 || block.arity == -1
+          default_response.tap{ |r| r.data = block.call }
+        else
+          default_response.tap{ |r| block.call(r) }
+        end
+      end
+
+      private
+
+      def default_response
+        Sanford::Protocol::Response.new(200, {})
+      end
     end
 
   end

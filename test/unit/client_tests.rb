@@ -127,15 +127,12 @@ module AndSon::Client
       @params = { Factory.string => Factory.string }
 
       @client = AndSon::TestClient.new(@host, @port)
-      data = Factory.string
-      @client.add_response(@name, @params){ data }
-      @response = @client.responses.get(@name, @params)
     end
     subject{ @client }
 
     should have_accessors :timeout_value, :params_value, :logger_value
     should have_readers :calls, :responses
-    should have_imeths :add_response, :remove_response, :reset
+    should have_imeths :add_response, :remove_responses, :reset
 
     should "default its params value" do
       assert_equal({}, subject.params_value)
@@ -158,38 +155,58 @@ module AndSon::Client
       assert_instance_of AndSon::TestClient::Call, call
       assert_equal @name, call.request_name
       assert_equal @params, call.request_params
-      assert_equal @response.protocol_response, call.response
+      assert_instance_of Sanford::Protocol::Response, call.response
     end
 
-    should "return a stored response using `call`" do
-      assert_equal @response.data, subject.call(@name, @params)
+    should "return a stored response's data using `call`" do
+      exp = subject.responses.get(@name, @params)
+      assert_equal exp.data, subject.call(@name, @params)
     end
 
     should "yield a stored response using `call` with a block" do
       yielded = nil
       subject.call(@name, @params){ |response| yielded = response }
-      assert_equal @response.protocol_response, yielded
+      exp = subject.responses.get(@name, @params)
+      assert_equal exp.protocol_response, yielded
     end
 
     should "allow adding/removing stored responses" do
       data = Factory.string
-      subject.add_response(@name, @params){ data }
+      subject.add_response(@name).with(@params){ data }
       response = subject.responses.get(@name, @params)
       assert_equal data, response.data
 
-      subject.remove_response(@name, @params)
+      subject.remove_responses(@name)
       response = subject.responses.get(@name, @params)
+      assert_not_equal data, response.data
+    end
+
+    should "return a stored response stub using `add_response`" do
+      stub = subject.add_response(@name)
+      assert_instance_of AndSon::StoredResponses::Stub, stub
+
+      data = Factory.string
+      stub.with(@params){ data }
+      response = subject.responses.get(@name, @params)
+      assert_equal data, response.data
+
+      response = subject.responses.get(@name, {
+        Factory.string => Factory.string
+      })
       assert_not_equal data, response.data
     end
 
     should "clear its calls and remove all its configured responses using `reset`" do
       subject.call(@name, @params)
-      assert_not_equal [], subject.calls
-      assert_equal @response, subject.responses.get(@name, @params)
+      data = Factory.string
+      subject.add_response(@name).with(@params){ data }
+
+      assert_not_empty subject.calls
+      assert_equal data, subject.responses.get(@name, @params).data
 
       subject.reset
-      assert_equal [], subject.calls
-      assert_not_equal @response, subject.responses.get(@name, @params)
+      assert_empty subject.calls
+      assert_not_equal data, subject.responses.get(@name, @params).data
     end
 
     should "be comparable" do
