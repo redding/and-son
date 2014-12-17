@@ -11,14 +11,17 @@ module AndSon
     DEFAULT_TIMEOUT = 60 # seconds
 
     attr_reader :host, :port
+    attr_reader :before_call_procs, :after_call_procs
     attr_accessor :timeout_value, :params_value, :logger_value
 
     def initialize(host, port)
       @host = host
       @port = port
-      @params_value = {}
+      @params_value  = {}
       @timeout_value = (ENV['ANDSON_TIMEOUT'] || DEFAULT_TIMEOUT).to_f
-      @logger_value = NullLogger.new
+      @logger_value  = NullLogger.new
+      @before_call_procs = []
+      @after_call_procs  = []
     end
 
     # chain runner methods by returning itself
@@ -29,10 +32,14 @@ module AndSon
       if !params.kind_of?(Hash)
         raise ArgumentError, "expected params to be a Hash instead of a #{params.class}"
       end
+      call_params = self.params_value.merge(params)
+
+      self.before_call_procs.each{ |p| p.call(name, call_params, self) }
       client_response = nil
       benchmark = Benchmark.measure do
-        client_response = self.call!(name, params)
+        client_response = call!(name, call_params)
       end
+      self.after_call_procs.each{ |p| p.call(name, call_params, self) }
 
       summary_line = SummaryLine.new({
         'time'    => RoundedTime.new(benchmark.real),
@@ -50,19 +57,6 @@ module AndSon
       end
     end
 
-    def call!(name, params)
-      call_params = self.params_value.merge(params)
-      AndSon::Connection.new(host, port).open do |connection|
-        connection.write(Sanford::Protocol::Request.new(name, call_params).to_hash)
-        connection.close_write
-        if !connection.peek(timeout_value).empty?
-          AndSon::Response.parse(connection.read(timeout_value))
-        else
-          raise AndSon::ConnectionClosedError.new
-        end
-      end
-    end
-
     def hash
       [ self.host,
         self.port,
@@ -76,6 +70,20 @@ module AndSon
       other.kind_of?(self.class) ? self.hash == other.hash : super
     end
     alias :eql? :==
+
+    private
+
+    def call!(name, params)
+      AndSon::Connection.new(host, port).open do |connection|
+        connection.write(Sanford::Protocol::Request.new(name, params).to_hash)
+        connection.close_write
+        if !connection.peek(timeout_value).empty?
+          AndSon::Response.parse(connection.read(timeout_value))
+        else
+          raise AndSon::ConnectionClosedError.new
+        end
+      end
+    end
 
     module InstanceMethods
 
@@ -97,6 +105,14 @@ module AndSon
 
       def logger(passed_logger)
         self.call_runner.tap{ |r| r.logger_value = passed_logger }
+      end
+
+      def before_call(&block)
+        self.call_runner.tap{ |r| r.before_call_procs << block }
+      end
+
+      def after_call(&block)
+        self.call_runner.tap{ |r| r.after_call_procs << block }
       end
 
       private

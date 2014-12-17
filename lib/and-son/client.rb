@@ -56,20 +56,28 @@ module AndSon
   class TestClient
     include Client
 
-    attr_accessor :timeout_value, :params_value, :logger_value
     attr_reader :calls, :responses
+    attr_reader :before_call_procs, :after_call_procs
+    attr_accessor :timeout_value, :params_value, :logger_value
 
     def initialize(host, port)
       super
-      @params_value = {}
       @calls = []
       @responses = AndSon::StoredResponses.new
+
+      @params_value = {}
+      @before_call_procs = []
+      @after_call_procs  = []
     end
 
     def call(name, params = nil)
       params ||= {}
+      callback_params = self.params_value.merge(params)
+
       response = self.responses.get(name, params)
+      self.before_call_procs.each{ |p| p.call(name, callback_params, self) }
       self.calls << Call.new(name, params, response.protocol_response)
+      self.after_call_procs.each{ |p| p.call(name, callback_params, self) }
       if block_given?
         yield response.protocol_response
       else

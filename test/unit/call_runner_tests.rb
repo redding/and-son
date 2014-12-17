@@ -29,6 +29,7 @@ class AndSon::CallRunner
     subject{ @call_runner }
 
     should have_readers :host, :port
+    should have_readers :before_call_procs, :after_call_procs
     should have_accessors :params_value, :timeout_value, :logger_value
     should have_imeths :call_runner
 
@@ -37,10 +38,12 @@ class AndSon::CallRunner
       assert_equal @port, subject.port
     end
 
-    should "default its params, timeout and logger" do
+    should "default its params, timeout, logger and callbacks" do
       assert_equal({}, subject.params_value)
       assert_equal 60, subject.timeout_value
       assert_instance_of NullLogger, subject.logger_value
+      assert_equal [], subject.before_call_procs
+      assert_equal [], subject.after_call_procs
     end
 
     should "return itself using `call_runner`" do
@@ -97,6 +100,7 @@ class AndSon::CallRunner
   class InstanceMethodsTests < InitTests
 
     should have_imeths :timeout, :params, :logger
+    should have_imeths :before_call, :after_call
 
     should "set its timeout value and return its call runner using `timeout`" do
       timeout_value = Factory.integer
@@ -136,6 +140,28 @@ class AndSon::CallRunner
       assert_same subject, result
     end
 
+    should "add a before call proc using `before_call`" do
+      callback = proc{ Factory.string }
+      result = subject.before_call(&callback)
+      assert_equal [callback], subject.before_call_procs
+
+      other_callback = proc{ Factory.string }
+      result = subject.before_call(&other_callback)
+      assert_equal 2, subject.before_call_procs.size
+      assert_equal other_callback, subject.before_call_procs.last
+    end
+
+    should "add an after call proc using `after_call`" do
+      callback = proc{ Factory.string }
+      result = subject.after_call(&callback)
+      assert_equal [callback], subject.after_call_procs
+
+      other_callback = proc{ Factory.string }
+      result = subject.after_call(&other_callback)
+      assert_equal 2, subject.after_call_procs.size
+      assert_equal other_callback, subject.after_call_procs.last
+    end
+
   end
 
   class CallSetupTests < InitTests
@@ -158,23 +184,35 @@ class AndSon::CallRunner
   class CallTests < CallSetupTests
     desc "call method"
     setup do
-      @call_bang_name = nil
-      @call_bang_params = nil
-      @call_bang_called = false
-      Assert.stub(@call_runner, :call!) do |name, params|
-        @call_bang_name = name
-        @call_bang_params = params
-        @call_bang_called = true
-        @response
-      end
+      @fake_connection = FakeConnection.new
+      @fake_connection.peek_data = Factory.string(1)
+      @fake_connection.read_data = @protocol_response.to_hash
+      Assert.stub(AndSon::Connection, :new).with(@host, @port){ @fake_connection }
     end
 
-    should "call `call!`" do
-      assert_false @call_bang_called
+    should "open a connection, write a request and close the write stream" do
       subject.call(@name, @params)
-      assert_equal @name, @call_bang_name
-      assert_equal @params, @call_bang_params
-      assert_true @call_bang_called
+
+      protocol_connection = @fake_connection.protocol_connection
+      exp = Sanford::Protocol::Request.new(@name, @params).to_hash
+      assert_equal exp, protocol_connection.write_data
+      assert_true protocol_connection.closed_write
+    end
+
+    should "build a response from reading the server response on the connection" do
+      response_data = subject.call(@name, @params)
+
+      protocol_connection = @fake_connection.protocol_connection
+      assert_equal @call_runner.timeout_value, protocol_connection.peek_timeout
+      assert_equal @call_runner.timeout_value, protocol_connection.read_timeout
+      assert_equal @response.data, response_data
+    end
+
+    should "raise a connection closed error if the server doesn't write a response" do
+      @fake_connection.peek_data = "" # simulate the server not writing a response
+      assert_raise(AndSon::ConnectionClosedError) do
+        subject.call(@name, @params)
+      end
     end
 
     should "return the response data when a block isn't provided" do
@@ -190,7 +228,71 @@ class AndSon::CallRunner
 
     should "default its params when they aren't provided" do
       subject.call(@name)
-      assert_equal({}, @call_bang_params)
+
+      protocol_connection = @fake_connection.protocol_connection
+      exp = Sanford::Protocol::Request.new(@name, {}).to_hash
+      assert_equal exp, protocol_connection.write_data
+    end
+
+    should "merge the passed params with its params value" do
+      subject.params({ Factory.string => Factory.string })
+      merged_params = subject.params_value.merge(@params)
+      subject.call(@name, @params)
+
+      protocol_connection = @fake_connection.protocol_connection
+      exp = Sanford::Protocol::Request.new(@name, merged_params).to_hash
+      assert_equal exp, protocol_connection.write_data
+    end
+
+    should "run before call procs" do
+      yielded_name    = nil
+      yielded_params  = nil
+      yielded_runner  = nil
+      subject.before_call do |name, params, call_runner|
+        yielded_name   = name
+        yielded_params = params
+        yielded_runner = call_runner
+      end
+
+      subject.call(@name, @params)
+      assert_equal @name,   yielded_name
+      assert_equal @params, yielded_params
+      assert_same subject, yielded_runner
+    end
+
+    should "run after call procs" do
+      yielded_name    = nil
+      yielded_params  = nil
+      yielded_runner  = nil
+      subject.after_call do |name, params, call_runner|
+        yielded_name   = name
+        yielded_params = params
+        yielded_runner = call_runner
+      end
+
+      subject.call(@name, @params)
+      assert_equal @name,   yielded_name
+      assert_equal @params, yielded_params
+      assert_same subject, yielded_runner
+    end
+
+    should "run callbacks in the correct order" do
+      n = 0
+      before_call_num = nil
+      after_call_num  = nil
+      call_num        = nil
+      subject.before_call{ before_call_num = n += 1 }
+      subject.after_call{ after_call_num = n += 1 }
+      # the connection should be created between the callbacks
+      Assert.stub(AndSon::Connection, :new).with(@host, @port) do
+        call_num = n += 1
+        @fake_connection
+      end
+
+      subject.call(@name, @params)
+      assert_equal 1, before_call_num
+      assert_equal 2, call_num
+      assert_equal 3, after_call_num
     end
 
     should "log a summary line of the call" do
@@ -207,45 +309,6 @@ class AndSon::CallRunner
 
     should "raise an argument error when not passed a hash for params" do
       assert_raises(ArgumentError){ subject.call(@name, Factory.string) }
-    end
-
-  end
-
-  class CallBangTests < CallSetupTests
-    desc "the call! method"
-    setup do
-      @call_runner.params({ Factory.string => Factory.string })
-
-      @fake_connection = FakeConnection.new
-      @fake_connection.peek_data = Factory.string(1)
-      @fake_connection.read_data = @protocol_response.to_hash
-      Assert.stub(AndSon::Connection, :new).with(@host, @port){ @fake_connection }
-    end
-
-    should "open a connection, write a request and close the write stream" do
-      subject.call!(@name, @params)
-
-      protocol_connection = @fake_connection.protocol_connection
-      params = @call_runner.params_value.merge(@params)
-      expected = Sanford::Protocol::Request.new(@name, params).to_hash
-      assert_equal expected, protocol_connection.write_data
-      assert_true protocol_connection.closed_write
-    end
-
-    should "build a response from reading the server response on the connection" do
-      response = subject.call!(@name, @params)
-
-      protocol_connection = @fake_connection.protocol_connection
-      assert_equal @call_runner.timeout_value, protocol_connection.peek_timeout
-      assert_equal @call_runner.timeout_value, protocol_connection.read_timeout
-      assert_equal @response, response
-    end
-
-    should "raise a connection closed error if the server doesn't write a response" do
-      @fake_connection.peek_data = "" # simulate the server not writing a response
-      assert_raise(AndSon::ConnectionClosedError) do
-        subject.call!(@name, @params)
-      end
     end
 
   end
