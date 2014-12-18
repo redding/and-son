@@ -6,14 +6,14 @@ module AndSon::Client
   class UnitTests < Assert::Context
     desc "AndSon::Client"
     setup do
-      @current_timeout = ENV['ANDSON_TEST_MODE']
+      @current_test_mode = ENV['ANDSON_TEST_MODE']
       ENV['ANDSON_TEST_MODE'] = 'yes'
 
       @host = Factory.string
       @port = Factory.integer
     end
     teardown do
-      ENV['ANDSON_TEST_MODE'] = @current_timeout
+      ENV['ANDSON_TEST_MODE'] = @current_test_mode
     end
     subject{ AndSon::Client }
 
@@ -130,16 +130,20 @@ module AndSon::Client
     end
     subject{ @client }
 
-    should have_accessors :timeout_value, :params_value, :logger_value
     should have_readers :calls, :responses
+    should have_readers :before_call_procs, :after_call_procs
+    should have_accessors :timeout_value, :params_value, :logger_value
     should have_imeths :add_response, :remove_responses, :reset
 
-    should "default its params value" do
-      assert_equal({}, subject.params_value)
+    should "know its calls and stored responses" do
+      assert_equal [], subject.calls
+      assert_instance_of AndSon::StoredResponses, subject.responses
     end
 
-    should "know its stored responses" do
-      assert_instance_of AndSon::StoredResponses, subject.responses
+    should "default its params and callbacks" do
+      assert_equal({}, subject.params_value)
+      assert_equal [], subject.before_call_procs
+      assert_equal [], subject.after_call_procs
     end
 
     should "know its call runner" do
@@ -168,6 +172,54 @@ module AndSon::Client
       subject.call(@name, @params){ |response| yielded = response }
       exp = subject.responses.get(@name, @params)
       assert_equal exp.protocol_response, yielded
+    end
+
+    should "run before call procs" do
+      subject.params({ Factory.string => Factory.string })
+      yielded_name    = nil
+      yielded_params  = nil
+      yielded_runner  = nil
+      subject.before_call do |name, params, call_runner|
+        yielded_name   = name
+        yielded_params = params
+        yielded_runner = call_runner
+      end
+
+      subject.call(@name, @params)
+      assert_equal @name,   yielded_name
+      exp = subject.params_value.merge(@params)
+      assert_equal exp, yielded_params
+      assert_same subject, yielded_runner
+    end
+
+    should "run after call procs" do
+      subject.params({ Factory.string => Factory.string })
+      yielded_name    = nil
+      yielded_params  = nil
+      yielded_runner  = nil
+      subject.after_call do |name, params, call_runner|
+        yielded_name   = name
+        yielded_params = params
+        yielded_runner = call_runner
+      end
+
+      subject.call(@name, @params)
+      assert_equal @name,   yielded_name
+      exp = subject.params_value.merge(@params)
+      assert_equal exp, yielded_params
+      assert_same subject, yielded_runner
+    end
+
+    should "run callbacks in the correct order" do
+      n = 0
+      before_call_num = nil
+      after_call_num  = nil
+      subject.before_call{ before_call_num = n += 1 }
+      subject.after_call{ after_call_num = n += 1 }
+
+      subject.call(@name, @params)
+      assert_equal 1, before_call_num
+      assert_equal 2, after_call_num
     end
 
     should "allow adding/removing stored responses" do
