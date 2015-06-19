@@ -126,6 +126,8 @@ module AndSon::Client
       @name = Factory.string
       @params = { Factory.string => Factory.string }
 
+      Assert.stub(Sanford::Protocol.msg_body, :encode){ |r| @encoded_request = r }
+
       @client = AndSon::TestClient.new(@host, @port)
     end
     subject{ @client }
@@ -147,7 +149,7 @@ module AndSon::Client
     end
 
     should "know its call runner" do
-      subject
+      assert_equal subject, subject.call_runner
     end
 
     should "store each call made in its `calls`" do
@@ -172,6 +174,12 @@ module AndSon::Client
       subject.call(@name, @params){ |response| yielded = response }
       exp = subject.responses.get(@name, @params)
       assert_equal exp.protocol_response, yielded
+    end
+
+    should "build and encode a request when called" do
+      subject.call(@name, @params)
+      exp = Sanford::Protocol::Request.new(@name, @params).to_hash
+      assert_equal exp, @encoded_request
     end
 
     should "run before call procs" do

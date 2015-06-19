@@ -55,10 +55,18 @@ class TestServer
         thread = Thread.new{ server.run }
         yield
       ensure
+        sockaddr = Socket.pack_sockaddr_in(
+          server.instance_variable_get("@port"),
+          '127.0.0.1'
+        )
+        socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
         begin
-          TCPSocket.open("localhost", server.instance_variable_get("@port"))
-        rescue Exception
+          socket.connect_nonblock(sockaddr)
+        rescue Errno::EINPROGRESS # socket is in the process of connecting
+          IO.select(nil, [socket], nil, 1) # timeout after 1 second
+        rescue StandardError
         end
+        socket.close
         thread.join
       end
     end
