@@ -74,6 +74,11 @@ module AndSon
       params ||= {}
       callback_params = self.params_value.merge(params)
 
+      # attempt to encode (and then throw away) the request, this will error on
+      # the developer if it can't encode the request
+      request = Sanford::Protocol::Request.new(name, params)
+      Sanford::Protocol.msg_body.encode(request.to_hash)
+
       response = self.responses.get(name, params)
       self.before_call_procs.each{ |p| p.call(name, callback_params, self) }
       self.calls << Call.new(name, params, response.protocol_response)
