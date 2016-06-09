@@ -1,6 +1,7 @@
 require 'assert'
 require 'and-son/client'
 
+require 'and-son'
 require 'test/support/test_server'
 
 module AndSon::Client
