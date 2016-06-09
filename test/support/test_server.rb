@@ -53,6 +53,7 @@ class TestServer
     def run_test_server(server, &block)
       begin
         thread = Thread.new{ server.run }
+        thread.join(JOIN_SECONDS)
         yield
       ensure
         sockaddr = Socket.pack_sockaddr_in(
