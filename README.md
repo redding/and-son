@@ -6,15 +6,15 @@ AndSon is a simple Sanford client for Ruby.  It provides an API for calling serv
 
 ```ruby
 # create a client
-client = AndSon.new('127.0.0.1', 8000, 'v1')
+client = AndSon.new('127.0.0.1', 8000)
 
 # call a service and get its response data:
-user_data = client.call('get_user', {:user_name => 'joetest'})
+user_data = client.call('get_user_v1', {:user_name => 'joetest'})
 ```
 
 ## Calling Services
 
-To call a service, you first need a client to make the calls.  You define clients by specifying the host's ip address and port plus the version of the API to make calls against.
+To call a service, you first need a client to make the calls.  You define clients by specifying the host's ip address and port.
 
 Once you have your client defined, make service calls using the `call` method.  It will return any response data and raise an exception if anything goes wrong.
 
